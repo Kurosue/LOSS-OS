@@ -1,9 +1,9 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
-#include "header/text/framebuffer.h"
-#include "header/stdlib/string.h"
-#include "header/cpu/portio.h"
+#include "../header/drivers/framebuffer.h"
+#include "../header/lib/string.h"
+#include "../header/cpu/portio.h"
 
 void framebuffer_set_cursor(uint8_t r, uint8_t c) {
     uint16_t pos = r * 80 + c;
