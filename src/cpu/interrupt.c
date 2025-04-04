@@ -1,5 +1,6 @@
 #include "../header/cpu/interrupt.h"
 #include "../header/cpu/portio.h"
+#include "../header/drivers/keyboard.h"
 
 void io_wait(void) {
     out(0x80, 0);
@@ -45,13 +46,14 @@ void main_interrupt_handler(struct InterruptFrame frame)
         case 0xe: // Page Fault (14)
             __asm__ volatile("hlt");
             break;
+        case IRQ_KEYBOARD + PIC1_OFFSET: // Keyboard (33)
+            keyboard_isr();
+            break;
 
-            /* for later
-               case IRQ_KEYBOARD + PIC1_OFFSET: // 0x21
-               break;
-               case 0x30: // syscall
-               break;
-               */
+        /* for later
+            case 0x30: // syscall
+            break;
+            */
 
         default:
             if (frame.int_number < 32)
@@ -68,4 +70,8 @@ void main_interrupt_handler(struct InterruptFrame frame)
             }
             break;
     }
+}
+
+void activate_keyboard_interrupt(void) {
+    out(PIC1_DATA, in(PIC1_DATA) & ~(1 << IRQ_KEYBOARD));
 }
