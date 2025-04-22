@@ -5,6 +5,7 @@
 #include "header/cpu/interrupt.h"
 #include "header/cpu/idt.h"
 #include "header/drivers/keyboard.h"
+#include "header/drivers/disk.h"
 
 void kernel_setup(void) {
     load_gdt(&_gdt_gdtr);
@@ -13,7 +14,12 @@ void kernel_setup(void) {
     activate_keyboard_interrupt();
     framebuffer_clear();
     framebuffer_set_cursor(0, 0);
-    
+
+    // test disk driver   
+    struct BlockBuffer b;
+    for (int i = 0; i < 512; i++) b.buf[i] = i % 16;
+    write_blocks(&b, 17, 1);
+
     int row = 0, col = 0;
     keyboard_state_activate();
     
