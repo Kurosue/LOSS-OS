@@ -1,7 +1,7 @@
 #include "../header/drivers/console.h"
 
 int cursor_row = 0, cursor_col = 0;
-static const uint8_t text_color = 0x0F; 
+static const uint8_t text_color = 0x0D; 
 
 // Initialize graphics console: set mode and clear screen.
 void console_init() {
@@ -73,17 +73,4 @@ void console_poll_input(void) {
 
     // Draw the cursor at (possibly) new position
     update_cursor();
-}
-
-void vga_draw_char(int x, int y, char c, uint8_t color) {
-    if (c < 32 || c > 126) return;  // ignore unsupported chars
-    const uint8_t *glyph = font8x8[c - 32];
-    for(int row = 0; row < 8; row++) {
-        uint8_t bits = glyph[row];
-        for(int col = 0; col < 8; col++) {
-            if (bits & (1 << col)) {
-                vga_draw_pixel(x + col, y + row, color);
-            }
-        }
-    }
 }

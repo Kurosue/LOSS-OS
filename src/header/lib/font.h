@@ -1,3 +1,5 @@
+#ifndef FONT_H
+#define FONT_H
 #include <stdint.h>
 
 // 8×8 font for ASCII 32..126 (printable characters). Each byte is one row of 8 pixels (LSB=left pixel).
@@ -194,3 +196,4 @@ static const uint8_t font8x8[95][8] = {
     { 0x6E, 0x3B, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }
 };
 
+#endif

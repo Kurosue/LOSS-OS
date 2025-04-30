@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include "../header/cpu/portio.h"
+#include "../header/lib/font.h"
 
 // Source : OSWiki.dev dan StackOverflow
 // Woila Penyelamat OSWiki 
@@ -29,5 +30,6 @@ void vga_draw_pixel(int x, int y, uint8_t color);
 void vga_clear(uint8_t color);
 void vga_draw_cursor(int cx, int cy, uint8_t color);
 void vga_clear_cursor(int cx, int cy);
+void vga_draw_char(int x, int y, char c, uint8_t color);
 
 #endif // GRAPHICS_H

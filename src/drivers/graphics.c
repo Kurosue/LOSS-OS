@@ -68,23 +68,30 @@ void vga_init(void) {
     vga_clear(0);
 }
 
-// Draw a single pixel at (x,y) with given 4-bit color (0-15)
 void vga_draw_pixel(int x, int y, uint8_t color) {
     if (x < 0 || x >= VGA_WIDTH || y < 0 || y >= VGA_HEIGHT) return;
     int byteIndex = y * VGA_PITCH + (x >> 3);
     uint8_t mask = 1 << (7 - (x & 7));
     uint8_t *vga = (uint8_t*)0xA0000;
 
-    // Set each plane according to color bits&#8203;:contentReference[oaicite:24]{index=24}
+    // Set all planes at once with the color value
+    out(VGA_SEQ_INDEX, 0x02);
+    out(VGA_SEQ_DATA, 0x0F);  // Enable all planes
+    
+    // Read current value to preserve other bits
+    uint8_t current = vga[byteIndex];
+    
+    // For each bit plane
     for (int plane = 0; plane < 4; plane++) {
         out(VGA_SEQ_INDEX, 0x02);
-        out(VGA_SEQ_DATA, (1 << plane));   // Map Mask = one plane
+        out(VGA_SEQ_DATA, (1 << plane));  // Select plane
+        
         if (color & (1 << plane)) {
-            // Set bit (logical OR)
-            vga[byteIndex] |= mask;
+            // Set bit for this plane
+            vga[byteIndex] = current | mask;
         } else {
-            // Clear bit (logical AND)
-            vga[byteIndex] &= ~mask;
+            // Clear bit for this plane
+            vga[byteIndex] = current & ~mask;
         }
     }
 }
@@ -121,9 +128,29 @@ void vga_clear_cursor(int cx, int cy) {
     // Character cell to pixel coords
     int px = cx * 8;
     int py = cy * 8;
-    for (int dy = 0; dy < 16; dy++) {
+    for (int dy = 7; dy < 16; dy++) {
         for (int dx = 0; dx < 8; dx++) {
             vga_draw_pixel(px + dx, py + dy, 0x00);  // use color 0 (black)
+        }
+    }
+}
+
+void vga_draw_char(int x, int y, char c, uint8_t color) {
+    if (c < 32 || c > 126) return;
+    // Bersihin dulu 8x8 pixel yang baka dipake
+    for(int dy=0; dy<8; dy++) {
+        for(int dx=0; dx<8; dx++) {
+            vga_draw_pixel(x+dx, y+dy, 0x00);
+        }
+    }
+
+    const uint8_t *glyph = font8x8[c - 32];
+    for(int row = 0; row < 8; row++) {
+        uint8_t bits = glyph[row];
+        for(int col = 0; col < 8; col++) {
+            if (bits & (1 << col)) {
+                vga_draw_pixel(x + col, y + row, color);
+            }
         }
     }
 }
