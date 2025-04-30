@@ -66,7 +66,7 @@ build: iso
 # Run in QEMU
 run: build
 	@echo "Starting QEMU..."
-	@qemu-system-i386 -s -S -cdrom $(BUILD_DIR)/$(PROJECT_NAME).iso
+	@qemu-system-i386 -s -cdrom $(BUILD_DIR)/$(PROJECT_NAME).iso
 
 # Clean build files
 clean:
