@@ -1,6 +1,8 @@
 {
     "debug.onTaskErrors": "debugAnyway",
     "files.associations": {
-        "portio.h": "c"
+        "portio.h": "c",
+        "stdlib.h": "c",
+        "keyboard.h": "c"
     },
 }

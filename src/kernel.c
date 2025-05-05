@@ -6,6 +6,7 @@
 #include "header/cpu/idt.h"
 #include "header/drivers/keyboard.h"
 #include "header/drivers/disk.h"
+#include "header/filesystem/ext2.h"
 
 void kernel_setup(void) {
     load_gdt(&_gdt_gdtr);
@@ -20,7 +21,54 @@ void kernel_setup(void) {
     for (int i = 0; i < 512; i++) b.buf[i] = i % 16;
     write_blocks(&b, 17, 1);
 
-    int row = 0, col = 0;
+    //test ext2
+    // I KNOW ITS A FCCKING AI SO DONT JUDGE ME
+    initialize_filesystem_ext2();
+    struct EXT2DriverRequest request;
+    request.buf = &b;
+    request.name = "test.txt";
+    request.name_len = 9;
+    request.parent_inode = 2;
+    request.buffer_size = 512;
+    request.is_directory = false;
+
+    int8_t result = write(&request);
+    if (result != 0) {
+        framebuffer_write(0, 0, 'E', 0xF, 0);
+        framebuffer_write(0, 1, 'R', 0xF, 0);
+        framebuffer_write(0, 2, 'R', 0xF, 0);
+        framebuffer_write(0, 3, 'O', 0xF, 0);
+        framebuffer_write(0, 4, 'R', 0xF, 0);
+    } else {
+        framebuffer_write(0, 0, 'W', 0xF, 0);
+        framebuffer_write(0, 1, 'R', 0xF, 0);
+        framebuffer_write(0, 2, 'I', 0xF, 0);
+        framebuffer_write(0, 3, 'T', 0xF, 0);
+        framebuffer_write(0, 4, 'E', 0xF, 0);
+    }
+    // test read
+    request.buf = &b;
+    request.name = "test.txt";
+    request.name_len = 9;
+    request.parent_inode = 2;
+    request.buffer_size = 512;
+    request.is_directory = false;
+    result = read(request);
+    if (result != 0) {
+        framebuffer_write(1, 0, 'E', 0xF, 0);
+        framebuffer_write(1, 1, 'R', 0xF, 0);
+        framebuffer_write(1, 2, 'R', 0xF, 0);
+        framebuffer_write(1, 3, 'O', 0xF, 0);
+        framebuffer_write(1, 4, 'R', 0xF, 0);
+    } else {
+        for (uint32_t i = 0; i < request.buffer_size; i++) {
+            framebuffer_write(1, i % FRAMEBUFFER_WIDTH, b.buf[i], 0xF, 0);
+        }
+    }
+
+
+
+    int row = 2, col = 0;
     keyboard_state_activate();
     
     while (true) {
