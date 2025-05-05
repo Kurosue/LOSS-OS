@@ -1,7 +1,7 @@
 #include "../header/drivers/console.h"
 
 int cursor_row = 0, cursor_col = 0;
-static const uint8_t text_color = 0x0D; 
+static const uint8_t text_color = 0x0F; 
 
 // Initialize graphics console: set mode and clear screen.
 void console_init() {
