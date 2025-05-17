@@ -392,4 +392,6 @@ void allocate_node_blocks(void *ptr, struct EXT2Inode *node, uint32_t prefered_b
  */
 void sync_node(struct EXT2Inode *node, uint32_t inode);
 
+uint32_t get_inode_for_path(const char *path);
+
 #endif
