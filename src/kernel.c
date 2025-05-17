@@ -39,7 +39,7 @@ void kernel_setup(void) {
 
     // ===== STEP 2: Resolve inode of /folder1 =====
     uint32_t folder1_inode = get_inode_for_path("/folder1");
-    vga_draw_char(0, 2, (folder1_inode != 0) ? 'I' : 'X', 0xF); // I = inode ok
+    vga_draw_char(0, 9, (folder1_inode != 0) ? 'I' : 'X', 0xF); // I = inode ok
 
     if (folder1_inode != 0) {
         // ===== STEP 3: Write tpazolite into /folder1 =====
@@ -53,12 +53,12 @@ void kernel_setup(void) {
         };
 
         int8_t write_result = write(&write_req);
-        vga_draw_char(0, 4, (write_result == 0) ? 'W' : 'X', 0xF); // W = write ok
+        vga_draw_char(0, 18, (write_result == 0) ? 'W' : 'X', 0xF); // W = write ok
 
         // ===== STEP 4: Clear buffer and read back =====
         memset(b.buf, 0, 512);
         int8_t read_result = read(write_req);
-        vga_draw_char(0, 6, (read_result == 0) ? 'R' : 'X', 0xF); // R = read ok
+        vga_draw_char(0, 25, (read_result == 0) ? 'R' : 'X', 0xF); // R = read ok
 
         // ===== STEP 5: Validate content =====
         bool valid = true;
@@ -68,7 +68,7 @@ void kernel_setup(void) {
                 break;
             }
         }
-        vga_draw_char(0, 8, (valid) ? 'V' : 'X', 0xF); // V = valid ok
+        vga_draw_char(0, 34, (valid) ? 'V' : 'X', 0xF); // V = valid ok
     }
 
     while (true) {
