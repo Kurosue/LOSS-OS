@@ -17,6 +17,7 @@ void kernel_setup(void) {
     activate_keyboard_interrupt();
     framebuffer_clear();
     framebuffer_set_cursor(0, 0);
+    console_init();
 
     initialize_filesystem_ext2();
 
@@ -34,11 +35,11 @@ void kernel_setup(void) {
     };
 
     int8_t mkdir_result = write(&mkdir_req);
-    framebuffer_write(0, 0, (mkdir_result == 0) ? 'M' : 'F', 0xF, 0); // M = mkdir success
+    vga_draw_char(0, 0, (mkdir_result == 0) ? 'M' : 'F', 0xF); // M = mkdir ok
 
     // ===== STEP 2: Resolve inode of /folder1 =====
     uint32_t folder1_inode = get_inode_for_path("/folder1");
-    framebuffer_write(0, 2, '0' + (folder1_inode % 10), 0xF, 0);
+    vga_draw_char(0, 2, (folder1_inode != 0) ? 'I' : 'X', 0xF); // I = inode ok
 
     if (folder1_inode != 0) {
         // ===== STEP 3: Write tpazolite into /folder1 =====
@@ -52,12 +53,12 @@ void kernel_setup(void) {
         };
 
         int8_t write_result = write(&write_req);
-        framebuffer_write(0, 4, (write_result == 0) ? 'W' : 'F', 0xF, 0); // W = write ok
+        vga_draw_char(0, 4, (write_result == 0) ? 'W' : 'X', 0xF); // W = write ok
 
         // ===== STEP 4: Clear buffer and read back =====
         memset(b.buf, 0, 512);
         int8_t read_result = read(write_req);
-        framebuffer_write(0, 6, (read_result == 0) ? 'r' : 'x', 0xF, 0); // r = read ok
+        vga_draw_char(0, 6, (read_result == 0) ? 'R' : 'X', 0xF); // R = read ok
 
         // ===== STEP 5: Validate content =====
         bool valid = true;
@@ -67,7 +68,7 @@ void kernel_setup(void) {
                 break;
             }
         }
-        framebuffer_write(0, 8, valid ? 'R' : 'X', 0xA, 0); // R = valid Read, X = mismatch
+        vga_draw_char(0, 8, (valid) ? 'V' : 'X', 0xF); // V = valid ok
     }
 
     while (true) {
