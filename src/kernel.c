@@ -7,6 +7,7 @@
 #include "header/drivers/keyboard.h"
 #include "header/drivers/disk.h"
 #include "header/filesystem/ext2.h"
+#include <string.h> // for memset, strlen
 
 void kernel_setup(void) {
     load_gdt(&_gdt_gdtr);
@@ -16,135 +17,59 @@ void kernel_setup(void) {
     framebuffer_clear();
     framebuffer_set_cursor(0, 0);
 
-    // test disk driver   
-    struct BlockBuffer b;
-    for (int i = 0; i < 512; i++) b.buf[i] = i % 16;
-    write_blocks(&b, 17, 1);
-
-    //test ext2
-    // I KNOW ITS A FCCKING AI SO DONT JUDGE ME
     initialize_filesystem_ext2();
-    struct EXT2DriverRequest request;
-    request.buf = &b;
-    request.name = "test.txt";
-    request.name_len = 9;
-    request.parent_inode = 2;
-    request.buffer_size = 512;
-    request.is_directory = false;
 
-    int8_t result = write(&request);
-    if (result != 0) {
-        framebuffer_write(0, 0, 'E', 0xF, 0);
-        framebuffer_write(0, 1, 'R', 0xF, 0);
-        framebuffer_write(0, 2, 'R', 0xF, 0);
-        framebuffer_write(0, 3, 'O', 0xF, 0);
-        framebuffer_write(0, 4, 'R', 0xF, 0);
-    } else {
-        framebuffer_write(0, 0, 'W', 0xF, 0);
-        framebuffer_write(0, 1, 'R', 0xF, 0);
-        framebuffer_write(0, 2, 'I', 0xF, 0);
-        framebuffer_write(0, 3, 'T', 0xF, 0);
-        framebuffer_write(0, 4, 'E', 0xF, 0);
-    }
-    // test read
-    request.buf = &b;
-    request.name = "test.txt";
-    request.name_len = 9;
-    request.parent_inode = 2;
-    request.buffer_size = 512;
-    request.is_directory = false;
-    result = read(request);
-    if (result != 0) {
-        framebuffer_write(1, 0, 'E', 0xF, 0);
-        framebuffer_write(1, 1, 'R', 0xF, 0);
-        framebuffer_write(1, 2, 'R', 0xF, 0);
-        framebuffer_write(1, 3, 'O', 0xF, 0);
-        framebuffer_write(1, 4, 'R', 0xF, 0);
-    } else {
-        for (uint32_t i = 0; i < request.buffer_size; i++) {
-            framebuffer_write(1, i % FRAMEBUFFER_WIDTH, b.buf[i], 0xF, 0);
+    struct BlockBuffer b;
+    for (int i = 0; i < 512; i++) b.buf[i] = 'A' + (i % 26);  // fill with predictable data
+
+    // ===== STEP 1: Create folder1 under root (inode 2) =====
+    struct EXT2DriverRequest mkdir_req = {
+        .name = "folder1",
+        .name_len = 7,
+        .parent_inode =1,
+        .buf = NULL,
+        .buffer_size = 0,
+        .is_directory = true
+    };
+
+    int8_t mkdir_result = write(&mkdir_req);
+    framebuffer_write(0, 0, (mkdir_result == 0) ? 'M' : 'F', 0xF, 0); // M = mkdir success
+
+    // ===== STEP 2: Resolve inode of /folder1 =====
+    uint32_t folder1_inode = get_inode_for_path("/folder1");
+    framebuffer_write(0, 2, '0' + (folder1_inode % 10), 0xF, 0);
+
+    if (folder1_inode != 0) {
+        // ===== STEP 3: Write tpazolite into /folder1 =====
+        struct EXT2DriverRequest write_req = {
+            .name = "tpazolite",
+            .name_len = 9,
+            .parent_inode = folder1_inode,
+            .buf = &b,
+            .buffer_size = 512,
+            .is_directory = false
+        };
+
+        int8_t write_result = write(&write_req);
+        framebuffer_write(0, 4, (write_result == 0) ? 'W' : 'F', 0xF, 0); // W = write ok
+
+        // ===== STEP 4: Clear buffer and read back =====
+        memset(b.buf, 0, 512);
+        int8_t read_result = read(write_req);
+        framebuffer_write(0, 6, (read_result == 0) ? 'r' : 'x', 0xF, 0); // r = read ok
+
+        // ===== STEP 5: Validate content =====
+        bool valid = true;
+        for (int i = 0; i < 512; i++) {
+            if (b.buf[i] != ('A' + (i % 26))) {
+                valid = false;
+                break;
+            }
         }
+        framebuffer_write(0, 8, valid ? 'R' : 'X', 0xA, 0); // R = valid Read, X = mismatch
     }
 
-
-
-    int row = 2, col = 0;
-    keyboard_state_activate();
-    
     while (true) {
-
-        // Check for regular character input
-        char c;
-        get_keyboard_buffer(&c);
-
-        if (c) {
-
-            // Handle special keys like backspace
-            if (c == '\b') {
-
-                // Handle backspace - move cursor back and clear character
-                if (col > 0) {
-                    col--;
-                } 
-                else if (row > 0) {
-                    row--;
-                    col = FRAMEBUFFER_WIDTH - 1;
-                }
-
-                // Clear the character at current position
-                framebuffer_write(row, col, ' ', 0xF, 0);
-            } 
-
-            // Handle newline
-            else if (c == '\n') {
-                row++;
-                col = 0;
-            } 
-
-            // Handle regular characters
-            else {
-                framebuffer_write(row, col, c, 0xF, 0);
-                col++;
-                if (col >= FRAMEBUFFER_WIDTH) {
-                    row++;
-                    col = 0;
-                }
-            }
-            
-            framebuffer_set_cursor(row, col);
-        }
-        
-        // Check for special keys (arrow keys, etc.)
-        uint8_t special_key = get_special_key();
-        if (special_key != KEY_NONE) {
-            switch (special_key) {
-                case KEY_UP:
-                    if (row > 0) row--;
-                    break;
-                    
-                case KEY_DOWN:
-                    if (row < FRAMEBUFFER_HEIGHT - 1) row++;
-                    break;
-                    
-                case KEY_LEFT:
-                    if (col > 0) {
-                        col--;
-                    } else if (row > 0) {
-                        row--;
-                        col = FRAMEBUFFER_WIDTH - 1;
-                    }
-                    break;
-                    
-                case KEY_RIGHT:
-                    if (col < FRAMEBUFFER_WIDTH - 1) {
-                        col++;
-                    } else if (row < FRAMEBUFFER_HEIGHT - 1) {
-                        row++;
-                        col = 0;
-                    }
-                    break;
-            }
-            framebuffer_set_cursor(row, col);
-        }
+        // infinite loop to prevent exit
     }
 }

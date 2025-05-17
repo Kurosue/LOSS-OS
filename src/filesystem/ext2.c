@@ -1091,3 +1091,69 @@ void sync_node(struct EXT2Inode *node, uint32_t inode) {
     ((struct EXT2Inode *)buf.buf)[local % INODES_PER_TABLE] = *node;
     write_blocks(&buf, inode_block_index, 1);
 }
+
+// Debug Purposes
+uint32_t get_inode_for_path(const char *path) {
+    if (!path || path[0] != '/') return 0;
+    if (path[1] == '\0') return 2; // root inode is 2
+
+    char temp[64];
+    uint32_t current_inode = 2;
+    const char *start = path + 1;
+    const char *end = start;
+
+    while (*start) {
+        while (*end && *end != '/') end++;
+
+        int len = end - start;
+        if (len <= 0 || len > 64) return 0;
+        memcpy(temp, start, len);
+        temp[len] = 0;
+
+        struct EXT2DriverRequest req = {
+            .buf = NULL,
+            .name = temp,
+            .name_len = len,
+            .parent_inode = current_inode,
+            .buffer_size = 0,
+            .is_directory = true
+        };
+
+        struct BlockBuffer buf;
+        if (read_directory(&req) != 0) return 0;
+
+        struct EXT2Inode *inode;
+        uint32_t bgd = inode_to_bgd(current_inode);
+        uint32_t local = inode_to_local(current_inode);
+        uint32_t itb = bgdtCache.table[bgd].bg_inode_table;
+        read_blocks(&buf, itb + (local / INODES_PER_TABLE), 1);
+        inode = &((struct EXT2Inode *)buf.buf)[local % INODES_PER_TABLE];
+
+        bool found = false;
+        for (uint32_t i = 0; i < inode->i_blocks && !found; i++) {
+            uint32_t block = inode->i_block[i];
+            if (block == 0) continue;
+            struct BlockBuffer dirBuf;
+            read_blocks(&dirBuf, block, 1);
+            uint32_t offset = 0;
+            while (offset < BLOCK_SIZE) {
+                struct EXT2DirectoryEntry *entry = (struct EXT2DirectoryEntry *)(dirBuf.buf + offset);
+                if (entry->inode != 0 &&
+                    entry->name_len == len &&
+                    memcmp(get_entry_name(entry), temp, len) == 0) {
+                    current_inode = entry->inode;
+                    found = true;
+                    break;
+                }
+                if (entry->rec_len == 0) break;
+                offset += entry->rec_len;
+            }
+        }
+
+        if (!found) return 0;
+        if (*end == '/') end++;
+        start = end;
+    }
+
+    return current_inode;
+}
