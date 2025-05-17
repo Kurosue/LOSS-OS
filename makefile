@@ -3,6 +3,7 @@ PROJECT_NAME  = OS2025
 SRC_DIR       = src
 BUILD_DIR     = bin
 INCLUDE_DIR   = src/header
+DISK_NAME     = storage
 
 # Tools
 CC      = gcc
@@ -66,9 +67,15 @@ build: iso
 # Run in QEMU
 run: build
 	@echo "Starting QEMU..."
-	@qemu-system-i386 -s -cdrom $(BUILD_DIR)/$(PROJECT_NAME).iso
+	@qemu-system-i386 -s -S -drive file=bin/storage.bin,format=raw,if=ide,index=0,media=disk -cdrom $(BUILD_DIR)/$(PROJECT_NAME).iso
 
 # Clean build files
 clean:
 	@echo "Cleaning build files..."
 	@rm -rf $(BUILD_DIR)/*
+
+# Create disk image
+
+disk:
+	@qemu-img create -f raw $(BUILD_DIR)/$(DISK_NAME).bin 4M
+

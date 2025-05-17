@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
-#include "../header/cpu/interrupt.h"
+#include "../cpu/interrupt.h"
 
 // Scancode definitions for important keys
 #define SCANCODE_SHIFT_LEFT  0x2A
