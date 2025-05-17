@@ -5,6 +5,7 @@
 #include "header/cpu/interrupt.h"
 #include "header/cpu/idt.h"
 #include "header/drivers/keyboard.h"
+#include "header/drivers/console.h"
 #include "header/drivers/disk.h"
 #include "header/filesystem/ext2.h"
 #include <string.h> // for memset, strlen
