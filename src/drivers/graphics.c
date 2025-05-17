@@ -136,6 +136,8 @@ void vga_clear_cursor(int cx, int cy) {
 }
 
 void vga_draw_char(int x, int y, char c, uint8_t color) {
+    x = x * 8;
+    y = y * 8;
     if (c < 32 || c > 126) return;
     // Bersihin dulu 8x8 pixel yang baka dipake
     for(int dy=0; dy<8; dy++) {
