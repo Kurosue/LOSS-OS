@@ -12,7 +12,6 @@
 #include <string.h> // for memset, strlen
 
 void kernel_setup(void) {
-     // V = valid ok
     load_gdt(&_gdt_gdtr);
     pic_remap();
     initialize_idt();

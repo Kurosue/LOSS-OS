@@ -80,7 +80,7 @@ disk:
 	@qemu-img create -f raw $(BUILD_DIR)/$(DISK_NAME).bin 4M
 
 inserter:
-	@$(CC) $(CFLAGS) -Wno-builtin-declaration-mismatch -g -I$(SRC_DIR) \
+	@$(CC) -I$(INCLUDE_DIR) -Wno-builtin-declaration-mismatch -g -I$(SRC_DIR) \
 		$(SRC_DIR)/lib/string.c \
 		$(SRC_DIR)/filesystem/ext2.c \
 		$(SRC_DIR)/external/external-inserter.c \
