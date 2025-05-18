@@ -5,6 +5,11 @@
 #include "../header/lib/string.h"
 #include "../header/cpu/portio.h"
 
+struct Framebuffer framebuffer_state = {
+    .col = 0,
+    .row = 0
+};
+
 void framebuffer_set_cursor(uint8_t r, uint8_t c) {
     uint16_t pos = r * 80 + c;
 	out(CURSOR_PORT_CMD, 0x0F);
@@ -24,4 +29,44 @@ void framebuffer_clear(void) {
         FRAMEBUFFER_MEMORY_OFFSET[i*2] = 0x00;
         FRAMEBUFFER_MEMORY_OFFSET[i*2+1] = 0x07;
     }
+}
+
+void putchar(char c, uint32_t color) {
+    if (c == '\0') {
+        return;
+    }
+    if (c != '\n') {
+        framebuffer_write(framebuffer_state.row, framebuffer_state.col, c, color, 0);
+    }
+
+    if (framebuffer_state.col == FRAMEBUFFER_WIDTH - 1 || c == '\n') {
+        framebuffer_state.row++;
+        framebuffer_state.col = 0;
+        if (framebuffer_state.row == FRAMEBUFFER_HEIGHT) {
+            scrollDown();
+        }
+        framebuffer_write(framebuffer_state.row, framebuffer_state.col, ' ', color, 0);
+    } else {
+        framebuffer_state.col++;
+    }
+    framebuffer_set_cursor(framebuffer_state.row, framebuffer_state.col);
+}
+
+void puts(uint32_t string, uint32_t count, uint32_t color) {
+    char* temp = (char*) string;
+    uint32_t i;
+    if (framebuffer_state.row >= FRAMEBUFFER_HEIGHT - 1) scrollDown();
+    for (i = 0; i < count; i++) {
+        putchar(temp[i], color);
+    }
+}
+
+void scrollDown() {
+    memcpy(FRAMEBUFFER_MEMORY_OFFSET, FRAMEBUFFER_MEMORY_OFFSET + FRAMEBUFFER_WIDTH * 2, FRAMEBUFFER_WIDTH * 2 * (FRAMEBUFFER_HEIGHT - 1));
+    framebuffer_state.row--;
+    framebuffer_state.col = 0;
+    for (int i = 0; i < FRAMEBUFFER_WIDTH; i++) {
+        framebuffer_write(framebuffer_state.row, i, ' ', 0xF, 0);
+    }
+    framebuffer_set_cursor(framebuffer_state.row, framebuffer_state.col);
 }

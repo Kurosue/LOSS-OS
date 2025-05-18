@@ -21,7 +21,8 @@ void kernel_setup(void) {
     initialize_filesystem_ext2();
     gdt_install_tss();
     set_tss_register();
-
+    
+    
     // Allocate first 4 MiB virtual memory
     paging_allocate_user_page_frame(&_paging_kernel_page_directory, (uint8_t*) 0);
 
@@ -38,7 +39,4 @@ void kernel_setup(void) {
     // Set TSS $esp pointer and jump into shell 
     set_tss_kernel_current_stack();
     kernel_execute_user_program((uint8_t*) 0);
-    while (true) {
-        // infinite loop to prevent exit
-    }
 }

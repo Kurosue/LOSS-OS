@@ -11,6 +11,16 @@
 #define FRAMEBUFFER_WIDTH  80   // Standard VGA text mode width
 #define FRAMEBUFFER_HEIGHT 25   // Standard VGA text mode height
 
+
+struct Framebuffer {
+    int row;
+    int col;
+    int start_row;
+    int start_col;
+} __attribute((packed));
+
+extern struct Framebuffer framebuffer_state;
+
 /**
  * Terminal framebuffer
  * Resolution: 80x25
@@ -46,5 +56,11 @@ void framebuffer_set_cursor(uint8_t r, uint8_t c);
  *
  */
 void framebuffer_clear(void);
+
+void putchar(char c, uint32_t color);
+
+void puts(uint32_t string, uint32_t count, uint32_t color);
+
+void scrollDown();
 
 #endif

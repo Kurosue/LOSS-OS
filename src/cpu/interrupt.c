@@ -1,7 +1,5 @@
 #include "../header/cpu/interrupt.h"
-#include "../header/cpu/portio.h"
-#include "../header/drivers/keyboard.h"
-#include "../header/cpu/gdt.h"
+
 
 void io_wait(void) {
     out(0x80, 0);
@@ -63,10 +61,9 @@ void main_interrupt_handler(struct InterruptFrame frame)
             keyboard_isr();
             break;
 
-        /* for later
-            case 0x30: // syscall
+        case 0x30: // System call (48)
+            syscall(frame);
             break;
-            */
 
         default:
             if (frame.int_number < 32)
@@ -87,4 +84,30 @@ void main_interrupt_handler(struct InterruptFrame frame)
 
 void activate_keyboard_interrupt(void) {
     out(PIC1_DATA, in(PIC1_DATA) & ~(1 << IRQ_KEYBOARD));
+}
+
+void syscall(struct InterruptFrame frame) {
+    switch (frame.cpu.general.eax) {
+        case 0:
+            *((int8_t*) frame.cpu.general.ecx) = read(
+                *(struct EXT2DriverRequest*) frame.cpu.general.ebx
+            );
+            break;
+        case 4:
+            get_keyboard_buffer((char*) frame.cpu.general.ebx);
+            break;
+        case 5:
+            putchar((char)(frame.cpu.general.ebx), frame.cpu.general.ecx);
+            break;
+        case 6:
+            puts(
+                frame.cpu.general.ebx,
+                frame.cpu.general.ecx,
+                frame.cpu.general.edx
+            ); // Assuming puts() exist in kernel
+            break;
+        case 7: 
+            keyboard_state_activate();
+            break;
+    }
 }

@@ -12,8 +12,8 @@ LINKER  = ld
 GENISO  = genisoimage
 
 # Source files - automatically find all .c and .s files
-C_SOURCES   := $(shell find $(SRC_DIR) -path "$(SRC_DIR)/external" -prune -o -name "*.c" -print)
-ASM_SOURCES := $(shell find $(SRC_DIR) -path "$(SRC_DIR)/external" -prune -o -name "*.s" -print)
+C_SOURCES := $(shell find $(SRC_DIR) \( -path "$(SRC_DIR)/external" -o -path "$(SRC_DIR)/user" \) -prune -o -name "*.c" -print)
+ASM_SOURCES := $(shell find $(SRC_DIR) \( -path "$(SRC_DIR)/external" -o -path "$(SRC_DIR)/user" \) -prune -o -name "*.s" -print)
 
 # Object files
 C_OBJECTS   := $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(C_SOURCES))
@@ -32,7 +32,7 @@ ISOFLAGS       = -R -b boot/grub/grub1 -no-emul-boot -boot-load-size 4 -A os -in
 # Targets
 .PHONY: all clean build iso run
 
-all: build
+all: clean disk insert-shell run 
 
 # Create directories for object files
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
@@ -67,7 +67,7 @@ build: iso
 # Run in QEMU
 run: build
 	@echo "Starting QEMU..."
-	@qemu-system-i386 -s -S -drive file=bin/storage.bin,format=raw,if=ide,index=0,media=disk -cdrom $(BUILD_DIR)/$(PROJECT_NAME).iso
+	@qemu-system-i386 -s -drive file=bin/storage.bin,format=raw,if=ide,index=0,media=disk -cdrom $(BUILD_DIR)/$(PROJECT_NAME).iso
 
 # Clean build files
 clean:
@@ -89,11 +89,16 @@ inserter:
 user-shell:
 	@$(ASM) $(ASMFLAGS) $(SRC_DIR)/user/crt0.s -o crt0.o
 	@$(CC)  $(CFLAGS) -fno-pie $(SRC_DIR)/user/user-shell.c -o user-shell.o
+	@$(CC)  $(CFLAGS) -fno-pie $(SRC_DIR)/lib/string.c -o string.o
 	@$(LINKER) -T $(SRC_DIR)/user/user-linker.ld -melf_i386 --oformat=binary \
-		crt0.o user-shell.o -o $(BUILD_DIR)/shell
+		crt0.o user-shell.o string.o -o $(BUILD_DIR)/shell
 	@echo Linking object shell object files and generate flat binary...
+	@$(LINKER) -T $(SRC_DIR)/user/user-linker.ld -melf_i386 --oformat=elf32-i386 \
+		crt0.o user-shell.o string.o -o $(BUILD_DIR)/shell_elf
+	@echo Linking object shell object files and generate ELF32 for debugging...
 	@size --target=binary $(BUILD_DIR)/shell
 	@rm -f *.o
+
 
 insert-shell: inserter user-shell
 	@echo Inserting shell into root directory... 

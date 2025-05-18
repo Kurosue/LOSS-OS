@@ -4,6 +4,11 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include "../header/filesystem/ext2.h"
+#include "../header/cpu/portio.h"
+#include "../header/drivers/keyboard.h"
+#include "../header/cpu/gdt.h"
+#include "../header/drivers/framebuffer.h"
 
 /* -- PIC constants -- */
 
@@ -167,5 +172,7 @@ void pic_remap(void);
  * @param frame Information about CPU during interrupt is raised
  */
 void main_interrupt_handler(struct InterruptFrame frame);
+
+void syscall(struct InterruptFrame frame);
 
 #endif
