@@ -4,6 +4,7 @@
         "portio.h": "c",
         "stdlib.h": "c",
         "keyboard.h": "c",
-        "string.h": "c"
+        "string.h": "c",
+        "gdt.h": "c"
     },
 }

@@ -12,8 +12,8 @@ LINKER  = ld
 GENISO  = genisoimage
 
 # Source files - automatically find all .c and .s files
-C_SOURCES   := $(shell find $(SRC_DIR) -name "*.c")
-ASM_SOURCES := $(shell find $(SRC_DIR) -name "*.s")
+C_SOURCES   := $(shell find $(SRC_DIR) -path "$(SRC_DIR)/external" -prune -o -name "*.c" -print)
+ASM_SOURCES := $(shell find $(SRC_DIR) -path "$(SRC_DIR)/external" -prune -o -name "*.s" -print)
 
 # Object files
 C_OBJECTS   := $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(C_SOURCES))
@@ -80,8 +80,21 @@ disk:
 	@qemu-img create -f raw $(BUILD_DIR)/$(DISK_NAME).bin 4M
 
 inserter:
-	@$(CC) -Wno-builtin-declaration-mismatch -g -I$(SRC_DIR) \
+	@$(CC) $(CFLAGS) -Wno-builtin-declaration-mismatch -g -I$(SRC_DIR) \
 		$(SRC_DIR)/lib/string.c \
 		$(SRC_DIR)/filesystem/ext2.c \
 		$(SRC_DIR)/external/external-inserter.c \
 		-o $(BUILD_DIR)/inserter
+
+user-shell:
+	@$(ASM) $(ASMFLAGS) $(SRC_DIR)/user/crt0.s -o crt0.o
+	@$(CC)  $(CFLAGS) -fno-pie $(SRC_DIR)/user/user-shell.c -o user-shell.o
+	@$(LINKER) -T $(SRC_DIR)/user/user-linker.ld -melf_i386 --oformat=binary \
+		crt0.o user-shell.o -o $(BUILD_DIR)/shell
+	@echo Linking object shell object files and generate flat binary...
+	@size --target=binary $(BUILD_DIR)/shell
+	@rm -f *.o
+
+insert-shell: inserter user-shell
+	@echo Inserting shell into root directory... 
+	@cd $(BUILD_DIR); ./inserter shell 1 $(DISK_NAME).bin

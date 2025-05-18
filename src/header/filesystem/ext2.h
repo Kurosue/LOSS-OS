@@ -4,8 +4,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
-#include "header/drivers/disk.h"
-#include "header/lib/string.h"
+#include "../header/drivers/disk.h"
+#include "../header/lib/string.h"
 
 /* -- IF2130 File System constants -- */
 #define BOOT_SECTOR 0 // legacy from FAT32 filesystem IF2130 OS

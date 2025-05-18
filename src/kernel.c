@@ -8,69 +8,37 @@
 #include "header/drivers/console.h"
 #include "header/drivers/disk.h"
 #include "header/filesystem/ext2.h"
+#include "header/memory/paging.h"
 #include <string.h> // for memset, strlen
 
 void kernel_setup(void) {
+     // V = valid ok
     load_gdt(&_gdt_gdtr);
     pic_remap();
     initialize_idt();
     activate_keyboard_interrupt();
     framebuffer_clear();
     framebuffer_set_cursor(0, 0);
-    // console_init();
-
     initialize_filesystem_ext2();
+    gdt_install_tss();
+    set_tss_register();
 
-    // struct BlockBuffer b;
-    // for (int i = 0; i < 512; i++) b.buf[i] = 'A' + (i % 26);  // fill with predictable data
+    // Allocate first 4 MiB virtual memory
+    paging_allocate_user_page_frame(&_paging_kernel_page_directory, (uint8_t*) 0);
 
-    // // ===== STEP 1: Create folder1 under root (inode 2) =====
-    // struct EXT2DriverRequest mkdir_req = {
-    //     .name = "folder1",
-    //     .name_len = 7,
-    //     .parent_inode =1,
-    //     .buf = NULL,
-    //     .buffer_size = 0,
-    //     .is_directory = true
-    // };
+    // Write shell into memory
+    struct EXT2DriverRequest request = {
+        .buf                   = (uint8_t*) 0,
+        .name                  = "shell",
+        .parent_inode          = 1,
+        .buffer_size           = 0x100000,
+        .name_len              = 5,
+    };
+    read(request);
 
-    // int8_t mkdir_result = write(&mkdir_req);
-    // vga_draw_char(0, 0, (mkdir_result == 0) ? 'M' : 'F', 0xF); // M = mkdir ok
-
-    // // ===== STEP 2: Resolve inode of /folder1 =====
-    // uint32_t folder1_inode = get_inode_for_path("/folder1");
-    // vga_draw_char(0, 9, (folder1_inode != 0) ? 'I' : 'X', 0xF); // I = inode ok
-
-    // if (folder1_inode != 0) {
-    //     // ===== STEP 3: Write tpazolite into /folder1 =====
-    //     struct EXT2DriverRequest write_req = {
-    //         .name = "tpazolite",
-    //         .name_len = 9,
-    //         .parent_inode = folder1_inode,
-    //         .buf = &b,
-    //         .buffer_size = 512,
-    //         .is_directory = false
-    //     };
-
-    //     int8_t write_result = write(&write_req);
-    //     vga_draw_char(0, 18, (write_result == 0) ? 'W' : 'X', 0xF); // W = write ok
-
-    //     // ===== STEP 4: Clear buffer and read back =====
-    //     memset(b.buf, 0, 512);
-    //     int8_t read_result = read(write_req);
-    //     vga_draw_char(0, 25, (read_result == 0) ? 'R' : 'X', 0xF); // R = read ok
-
-    //     // ===== STEP 5: Validate content =====
-    //     bool valid = true;
-    //     for (int i = 0; i < 512; i++) {
-    //         if (b.buf[i] != ('A' + (i % 26))) {
-    //             valid = false;
-    //             break;
-    //         }
-    //     }
-    //     vga_draw_char(0, 34, (valid) ? 'V' : 'X', 0xF); // V = valid ok
-    // }
-
+    // Set TSS $esp pointer and jump into shell 
+    set_tss_kernel_current_stack();
+    kernel_execute_user_program((uint8_t*) 0);
     while (true) {
         // infinite loop to prevent exit
     }
