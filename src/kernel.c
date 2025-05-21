@@ -1,14 +1,14 @@
 #include <stdint.h>
-#include "header/cpu/gdt.h"
-#include "header/kernel-entrypoint.h"
-#include "header/drivers/framebuffer.h"
-#include "header/cpu/interrupt.h"
-#include "header/cpu/idt.h"
-#include "header/drivers/keyboard.h"
-#include "header/drivers/console.h"
-#include "header/drivers/disk.h"
-#include "header/filesystem/ext2.h"
-#include "header/memory/paging.h"
+#include "cpu/gdt.h"
+#include "kernel-entrypoint.h"
+#include "drivers/framebuffer.h"
+#include "cpu/interrupt.h"
+#include "cpu/idt.h"
+#include "drivers/keyboard.h"
+#include "drivers/console.h"
+#include "drivers/disk.h"
+#include "filesystem/ext2.h"
+#include "memory/paging.h"
 #include <string.h> // for memset, strlen
 
 void kernel_setup(void) {
@@ -40,4 +40,4 @@ void kernel_setup(void) {
     // Set TSS $esp pointer and jump into shell 
     set_tss_kernel_current_stack();
     kernel_execute_user_program((uint8_t*) 0);
-} 
+}

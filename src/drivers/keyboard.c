@@ -1,7 +1,5 @@
-#include "../header/drivers/keyboard.h"
-#include "../header/cpu/portio.h"
-#include "../header/lib/string.h"
-#include "../header/cpu/interrupt.h"
+#include "drivers/keyboard.h"
+
 
 const char keyboard_scancode_1_to_ascii_map[256] = {
     0, 0x1B, '1', '2', '3', '4', '5', '6',  '7', '8', '9',  '0',  '-', '=', '\b', '\t',
@@ -122,9 +120,15 @@ void keyboard_isr(void) {
                     } 
                     else {
                         // Use either normal or uppercase map based on shift state
-                        keyboard_state.keyboard_buffer = use_uppercase ? 
-                            keyboard_scancode_1_to_ascii_uppercase_map[scancode] : 
-                            keyboard_scancode_1_to_ascii_map[scancode];
+                        char mapped = use_uppercase
+                            ? keyboard_scancode_1_to_ascii_uppercase_map[scancode]
+                            : keyboard_scancode_1_to_ascii_map[scancode];
+
+                        if (mapped >= 32 && mapped <= 126) {
+                            keyboard_state.keyboard_buffer = mapped;
+                        } else {
+                            keyboard_state.keyboard_buffer = 0;
+                        }
                     }
                 }
             } 

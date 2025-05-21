@@ -1,4 +1,4 @@
-#include "../header/drivers/console.h"
+#include "drivers/console.h"
 
 int cursor_row = 0, cursor_col = 0;
 static const uint8_t text_color = 0x0F; 

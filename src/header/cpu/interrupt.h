@@ -4,11 +4,11 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
-#include "../header/filesystem/ext2.h"
-#include "../header/cpu/portio.h"
-#include "../header/drivers/keyboard.h"
-#include "../header/cpu/gdt.h"
-#include "../header/drivers/framebuffer.h"
+#include "filesystem/ext2.h"
+#include "cpu/portio.h"
+#include "drivers/keyboard.h"
+#include "cpu/gdt.h"
+#include "drivers/framebuffer.h"
 
 /* -- PIC constants -- */
 

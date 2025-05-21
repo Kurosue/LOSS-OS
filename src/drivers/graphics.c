@@ -1,5 +1,5 @@
 #include <stdint.h>
-#include "../header/drivers/graphics.h"
+#include "drivers/graphics.h"
 
 // Source : OSWiki.dev dan StackOverflow
 // Woila Penyelamat OSWiki 

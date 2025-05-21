@@ -1,5 +1,4 @@
-#include "../header/cpu/gdt.h"
-#include "../header/cpu/interrupt.h"
+#include "cpu/gdt.h"
 
 /**
  * global_descriptor_table, predefined GDT.

@@ -1,4 +1,4 @@
-#include "../header/cpu/interrupt.h"
+#include "cpu/interrupt.h"
 
 
 void io_wait(void) {
@@ -88,21 +88,39 @@ void activate_keyboard_interrupt(void) {
 
 void syscall(struct InterruptFrame frame) {
     switch (frame.cpu.general.eax) {
-        case 0:
+        case 0: // Read
             *((int8_t*) frame.cpu.general.ecx) = read(
                 *(struct EXT2DriverRequest*) frame.cpu.general.ebx
             );
             break;
-        case 4:
+        case 1: // Read Dir
+            *((int8_t*) frame.cpu.general.ecx) = read_directory(
+                (struct EXT2DriverRequest*) frame.cpu.general.ebx
+            );
+            break;
+        case 2: // Write
+            *((int8_t*) frame.cpu.general.ecx) = write(
+                (struct EXT2DriverRequest*) frame.cpu.general.ebx
+            );
+            break;
+        case 3: // Delete
+            *((int8_t*) frame.cpu.general.ecx) = delete(
+                *(struct EXT2DriverRequest*) frame.cpu.general.ebx
+            );
+            break; 
+        case 4: // GetChar dari keyboard
             get_keyboard_buffer((char*) frame.cpu.general.ebx);
             break;
-        case 5:
-            putchar((char)(frame.cpu.general.ebx), frame.cpu.general.ecx);
+        case 5: // Putchar ke output wak
+            putchar(
+                (char) frame.cpu.general.ebx, 
+                frame.cpu.general.ecx
+            );
             break;
-        case 6:
+        case 6: // Puts doang
             puts(
-                frame.cpu.general.ebx,
-                frame.cpu.general.ecx,
+                (char *)frame.cpu.general.ebx, 
+                frame.cpu.general.ecx, 
                 frame.cpu.general.edx
             ); // Assuming puts() exist in kernel
             break;

@@ -2,8 +2,8 @@
 #define GRAPHICS_H
 
 #include <stdint.h>
-#include "../header/cpu/portio.h"
-#include "../header/lib/font.h"
+#include "cpu/portio.h"
+#include "lib/font.h"
 
 // Source : OSWiki.dev dan StackOverflow
 // Woila Penyelamat OSWiki 

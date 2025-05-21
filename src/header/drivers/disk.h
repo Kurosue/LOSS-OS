@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include "cpu/portio.h"
 
 /* -- ATA PIO status codes -- */
 #define ATA_STATUS_BSY   0x80

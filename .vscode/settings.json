@@ -5,6 +5,9 @@
         "stdlib.h": "c",
         "keyboard.h": "c",
         "string.h": "c",
-        "gdt.h": "c"
+        "gdt.h": "c",
+        "idt.h": "c",
+        "disk.h": "c",
+        "paging.h": "c"
     },
 }

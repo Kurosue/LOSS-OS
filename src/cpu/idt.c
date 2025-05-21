@@ -1,5 +1,4 @@
-#include "../header/cpu/idt.h"
-#include "../header/cpu/gdt.h"
+#include "cpu/idt.h"
 
 struct InterruptDescriptorTable interrupt_descriptor_table __attribute__((aligned(8)));
 

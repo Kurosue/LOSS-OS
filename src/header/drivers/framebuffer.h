@@ -4,6 +4,9 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include "lib/string.h"
+#include "cpu/portio.h"
+#include "drivers/keyboard.h"
 
 #define FRAMEBUFFER_MEMORY_OFFSET ((uint8_t*) 0xC00B8000)
 #define CURSOR_PORT_CMD    0x03D4
@@ -59,7 +62,7 @@ void framebuffer_clear(void);
 
 void putchar(char c, uint32_t color);
 
-void puts(uint32_t string, uint32_t count, uint32_t color);
+void puts(char* string, uint32_t count, uint32_t color);
 
 void scrollDown();
 

@@ -2,10 +2,10 @@
 #define CONSOLE_H
 
 #include <stdint.h>
-#include "../header/drivers/framebuffer.h"
-#include "../header/drivers/keyboard.h"
-#include "../header/lib/font.h"
-#include "../header/drivers/graphics.h"
+#include "drivers/framebuffer.h"
+#include "drivers/keyboard.h"
+#include "lib/font.h"
+#include "drivers/graphics.h"
 
 // Console state
 #define MAX_COLS (640/8)

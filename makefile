@@ -62,7 +62,7 @@ iso: kernel
 	@rm -r $(BUILD_DIR)/iso/
 
 # Build everything
-build: iso
+build: clean disk insert-shell iso
 
 # Run in QEMU
 run: build
