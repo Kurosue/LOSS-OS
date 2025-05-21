@@ -18,6 +18,7 @@ void kernel_setup(void) {
     activate_keyboard_interrupt();
     framebuffer_clear();
     framebuffer_set_cursor(0, 0);
+    // console_init();
     initialize_filesystem_ext2();
     gdt_install_tss();
     set_tss_register();
@@ -32,11 +33,11 @@ void kernel_setup(void) {
         .name                  = "shell",
         .parent_inode          = 1,
         .buffer_size           = 0x100000,
-        .name_len              = 5,
+        .name_len              = 5
     };
     read(request);
 
     // Set TSS $esp pointer and jump into shell 
     set_tss_kernel_current_stack();
     kernel_execute_user_program((uint8_t*) 0);
-}
+} 

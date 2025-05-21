@@ -1,5 +1,5 @@
 # Project name and directories
-PROJECT_NAME  = OS2025
+PROJECT_NAME  = LOSS
 SRC_DIR       = src
 BUILD_DIR     = bin
 INCLUDE_DIR   = src/header

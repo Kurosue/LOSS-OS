@@ -92,7 +92,11 @@ bool is_empty_storage(void) {
     struct BlockBuffer buf;
     read_blocks(&buf, BOOT_SECTOR, 1);
     uint16_t sig = *(uint16_t *)buf.buf;
-    return (sig != EXT2_SUPER_MAGIC);
+    // Cek sig sama dengan fs_signature atau tidak
+    if (sig == *(uint16_t *)fs_signature) {
+        return false;
+    }
+    return true;
 }
 
 void create_ext2(void) {
@@ -1095,10 +1099,10 @@ void sync_node(struct EXT2Inode *node, uint32_t inode) {
 // Debug Purposes
 uint32_t get_inode_for_path(const char *path) {
     if (!path || path[0] != '/') return 0;
-    if (path[1] == '\0') return 2; // root inode is 2
+    if (path[1] == '\0') return 1; // root inode is 1
 
     char temp[64];
-    uint32_t current_inode = 2;
+    uint32_t current_inode = 1;
     const char *start = path + 1;
     const char *end = start;
 
