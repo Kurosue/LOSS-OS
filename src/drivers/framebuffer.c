@@ -4,8 +4,10 @@
 #include "drivers/framebuffer.h"
 
 struct Framebuffer framebuffer_state = {
+    .row = 0,
     .col = 0,
-    .row = 0
+    .start_row = 0,
+    .start_col = 0
 };
 
 void framebuffer_set_cursor(uint8_t r, uint8_t c) {
@@ -27,89 +29,4 @@ void framebuffer_clear(void) {
         FRAMEBUFFER_MEMORY_OFFSET[i*2] = 0x00;
         FRAMEBUFFER_MEMORY_OFFSET[i*2+1] = 0x07;
     }
-}
-
-void putchar(char c, uint32_t color) {
-    if (c) {
-        if (c == '\b') {
-            if (framebuffer_state.col > 0) {
-                framebuffer_state.col--;
-            } 
-            else if (framebuffer_state.row > 0) {
-                framebuffer_state.row--;
-                framebuffer_state.col = FRAMEBUFFER_WIDTH - 1;
-            }
-
-            // Clear the character at current position
-            framebuffer_write(framebuffer_state.row, framebuffer_state.col, ' ', color, 0);
-        } 
-
-        // Handle newline
-        else if (c == '\n') {
-            framebuffer_state.row++;
-            framebuffer_state.col = 0;
-        } 
-
-        // Handle regular characters
-        else {
-            framebuffer_write(framebuffer_state.row, framebuffer_state.col, c, color, 0);
-            framebuffer_state.col++;
-            if (framebuffer_state.col >= FRAMEBUFFER_WIDTH) {
-                framebuffer_state.row++;
-                framebuffer_state.col = 0;
-            }
-        }
-        
-        framebuffer_set_cursor(framebuffer_state.row, framebuffer_state.col);
-    }
-    
-    uint8_t special_key = get_special_key();
-    if (special_key != KEY_NONE) {
-        switch (special_key) {
-            case KEY_UP:
-                if (framebuffer_state.row > 0) framebuffer_state.row--;
-                break;
-                
-            case KEY_DOWN:
-                if (framebuffer_state.row < FRAMEBUFFER_HEIGHT - 1) framebuffer_state.row++;
-                break;
-                
-            case KEY_LEFT:
-                if (framebuffer_state.col > 0) {
-                    framebuffer_state.col--;
-                } else if (framebuffer_state.row > 0) {
-                    framebuffer_state.row--;
-                    framebuffer_state.col = FRAMEBUFFER_WIDTH - 1;
-                }
-                break;
-                
-            case KEY_RIGHT:
-                if (framebuffer_state.col < FRAMEBUFFER_WIDTH - 1) {
-                    framebuffer_state.col++;
-                } else if (framebuffer_state.row < FRAMEBUFFER_HEIGHT - 1) {
-                    framebuffer_state.row++;
-                    framebuffer_state.col = 0;
-                }
-                break;
-        }
-        framebuffer_set_cursor(framebuffer_state.row, framebuffer_state.col);
-    }
-}
-
-void puts(char* string, uint32_t count, uint32_t color) {
-    uint32_t i;
-    if (framebuffer_state.row >= FRAMEBUFFER_HEIGHT - 1) scrollDown();
-    for (i = 0; i < count; i++) {
-        putchar(string[i], color);
-    }
-}
-
-void scrollDown() {
-    memcpy(FRAMEBUFFER_MEMORY_OFFSET, FRAMEBUFFER_MEMORY_OFFSET + FRAMEBUFFER_WIDTH * 2, FRAMEBUFFER_WIDTH * 2 * (FRAMEBUFFER_HEIGHT - 1));
-    framebuffer_state.row--;
-    framebuffer_state.col = 0;
-    for (int i = 0; i < FRAMEBUFFER_WIDTH; i++) {
-        framebuffer_write(framebuffer_state.row, i, ' ', 0xF, 0);
-    }
-    framebuffer_set_cursor(framebuffer_state.row, framebuffer_state.col);
 }

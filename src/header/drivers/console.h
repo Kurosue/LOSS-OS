@@ -12,9 +12,8 @@
 #define MAX_ROWS (480/8)
 
 void console_init(void);
-void console_putc(char c);
-void update_cursor(void);
-void console_poll_input(void);
+void update_cursor(uint8_t text_color);
+void putchar(char c, uint8_t text_color);
+void puts(char* string, uint32_t count, uint8_t text_color);
 
-
-#endif // CONSOLE_H
+#endif

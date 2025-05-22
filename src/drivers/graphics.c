@@ -4,14 +4,12 @@
 // Source : OSWiki.dev dan StackOverflow
 // Woila Penyelamat OSWiki 
 
-// Initialize VGA graphics mode (640x480 16-color) via port I/O
 void vga_init(void) {
     uint8_t tmp;
     out(VGA_CRTC_INDEX, 0x11);
     tmp = in(VGA_CRTC_DATA);
     out(VGA_CRTC_DATA, tmp & 0x7F);
 
-    // Misc Output: 0xE3 for 25MHz, enable graphics
     out(VGA_MISC_WRITE, 0xE3);  // See VGA mode 12h sample&#8203;:contentReference[oaicite:16]{index=16}
 
     // Sequencer registers (0x3C4/3C5)
@@ -64,7 +62,6 @@ void vga_init(void) {
     out(VGA_ACT_INDEX, 0x14); out(VGA_ACT_INDEX, 0x00);  // Color Select = 0
     out(VGA_ACT_INDEX, 0x20);                            // Finalize: enable video output
 
-    // Clear screen to black
     vga_clear(0);
 }
 
@@ -72,52 +69,42 @@ void vga_draw_pixel(int x, int y, uint8_t color) {
     if (x < 0 || x >= VGA_WIDTH || y < 0 || y >= VGA_HEIGHT) return;
     int byteIndex = y * VGA_PITCH + (x >> 3);
     uint8_t mask = 1 << (7 - (x & 7));
-    uint8_t *vga = (uint8_t*)0xA0000;
+    uint8_t *vga = (uint8_t*)VGA_MEMORY;
 
-    // Set all planes at once with the color value
     out(VGA_SEQ_INDEX, 0x02);
-    out(VGA_SEQ_DATA, 0x0F);  // Enable all planes
+    out(VGA_SEQ_DATA, 0x0F); 
     
-    // Read current value to preserve other bits
     uint8_t current = vga[byteIndex];
     
-    // For each bit plane
     for (int plane = 0; plane < 4; plane++) {
         out(VGA_SEQ_INDEX, 0x02);
-        out(VGA_SEQ_DATA, (1 << plane));  // Select plane
+        out(VGA_SEQ_DATA, (1 << plane));  
         
         if (color & (1 << plane)) {
-            // Set bit for this plane
             vga[byteIndex] = current | mask;
         } else {
-            // Clear bit for this plane
             vga[byteIndex] = current & ~mask;
         }
     }
 }
 
-// Clear the entire screen to the given color (0-15)
 void vga_clear(uint8_t color) {
-    uint8_t *vga = (uint8_t*)0xA0000;
-    // For each of 4 planes, fill memory to 0x00 or 0xFF
+    uint8_t *vga = (uint8_t*)VGA_MEMORY;
     for (int plane = 0; plane < 4; plane++) {
         out(VGA_SEQ_INDEX, 0x02);
-        out(VGA_SEQ_DATA, (1 << plane));   // Select plane
+        out(VGA_SEQ_DATA, (1 << plane));    
         if (color & (1 << plane)) {
-            // Fill plane with 1s (0xFF) to draw that bit everywhere
             for (int i = 0; i < VGA_PLANE_SIZE; i++) vga[i] = 0xFF;
         } else {
-            // Fill plane with 0s
             for (int i = 0; i < VGA_PLANE_SIZE; i++) vga[i] = 0x00;
         }
     }
 }
 
-// Draw a solid block cursor (8×16 pixels) at character cell (cx,cy)
 void vga_draw_cursor(int cx, int cy, uint8_t color) {
     int px = cx * 8;
     int py = cy * 8;
-    for (int dy = 7; dy < 8; dy++) { // Loop 8 rows instead of 16
+    for (int dy = 7; dy < 8; dy++) {
         for (int dx = 0; dx < 8; dx++) {
             vga_draw_pixel(px + dx, py + dy, color);
         }
@@ -125,12 +112,11 @@ void vga_draw_cursor(int cx, int cy, uint8_t color) {
 }
 
 void vga_clear_cursor(int cx, int cy) {
-    // Character cell to pixel coords
     int px = cx * 8;
     int py = cy * 8;
     for (int dy = 7; dy < 16; dy++) {
         for (int dx = 0; dx < 8; dx++) {
-            vga_draw_pixel(px + dx, py + dy, 0x00);  // use color 0 (black)
+            vga_draw_pixel(px + dx, py + dy, 0x00);
         }
     }
 }

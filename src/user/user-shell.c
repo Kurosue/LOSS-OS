@@ -14,6 +14,7 @@ void syscall(uint32_t eax, uint32_t ebx, uint32_t ecx, uint32_t edx) {
 }
 
 int main(void) {
+    // uint32_t currentInode = 1; // Init root cihuy
     struct BlockBuffer      bl[2]   = {0};
     struct EXT2DriverRequest request = {
         .buf                   = &bl,
@@ -25,17 +26,13 @@ int main(void) {
     int32_t retcode;
     syscall(0, (uint32_t) &request, (uint32_t) &retcode, 0);
     if (retcode == 0)
-        syscall(6, (uint32_t) "owo\n", 4, 0xF);
+        syscall(6, (uint32_t) "owo\n", 4, 0xa);
 
     char buf;
     syscall(7, 0, 0, 0);
     while (true) {
         syscall(4, (uint32_t) &buf, 0, 0);
-        if(buf)
-        {
-            syscall(5, (uint32_t) &buf, 0xF, 0);
-            buf = 0;
-        }
+        syscall(5, (uint32_t) buf, 0xF, 0);
     }
 
     return 0;

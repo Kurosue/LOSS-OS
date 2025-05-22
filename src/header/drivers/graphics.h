@@ -24,6 +24,7 @@
 #define VGA_GC_DATA      0x3CF
 #define VGA_ACT_INDEX    0x3C0
 #define VGA_INPUT_STATUS 0x3DA
+#define VGA_MEMORY       0xC0000000 + 0xA0000 // Tambah 0xC0000000 karena paging virtual memori
 
 void vga_init(void);
 void vga_draw_pixel(int x, int y, uint8_t color);

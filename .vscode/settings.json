@@ -8,6 +8,8 @@
         "gdt.h": "c",
         "idt.h": "c",
         "disk.h": "c",
-        "paging.h": "c"
+        "paging.h": "c",
+        "console.h": "c",
+        "interrupt.h": "c"
     },
 }

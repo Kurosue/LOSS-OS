@@ -230,7 +230,7 @@ int8_t read_directory(struct EXT2DriverRequest *prequest) {
     if (prequest == NULL) return -1;
     uint32_t parent_inode = prequest->parent_inode;
     if (parent_inode == 0) {
-        return 3;
+        return -1;  // Parent indoe ga valid alias 0
     }
     uint32_t parent_bgd = inode_to_bgd(parent_inode);
     uint32_t parent_local = inode_to_local(parent_inode);
@@ -240,7 +240,7 @@ int8_t read_directory(struct EXT2DriverRequest *prequest) {
     read_blocks(&buf, parent_block_index, 1);
     struct EXT2Inode *parent_node = &((struct EXT2Inode *)buf.buf)[parent_local % INODES_PER_TABLE];
     if ((parent_node->i_mode & EXT2_S_IFDIR) == 0) {
-        return 3;
+        return -1;  // Parent nya bukan folder (jaga jaga aja)
     }
     bool found = false;
     uint32_t entry_inode = 0;
@@ -269,10 +269,10 @@ int8_t read_directory(struct EXT2DriverRequest *prequest) {
         }
     }
     if (!found) {
-        return 2;
+        return 2;  // Unchanged: 2 for "Folder tidak ditemukan pada parent folder"
     }
     if (entry_file_type != EXT2_FT_DIR) {
-        return 1;
+        return 1;  // Unchanged: 1 for "Bukan sebuah folder"
     }
     uint32_t target_inode = entry_inode;
     uint32_t target_bgd = inode_to_bgd(target_inode);
@@ -282,25 +282,27 @@ int8_t read_directory(struct EXT2DriverRequest *prequest) {
     read_blocks(&buf, target_block_index, 1);
     struct EXT2Inode *target_node = &((struct EXT2Inode *)buf.buf)[target_local % INODES_PER_TABLE];
     if (target_node->i_blocks == 0) {
-        return 3;
+        return -1;  // Kalau block pada nodenya 0 alias gaada block
     }
     uint32_t dir_block = target_node->i_block[0];
     if (dir_block == 0) {
-        return 3;
+        return -1;  // Dir block null
     }
     struct BlockBuffer dataBuf;
     read_blocks(&dataBuf, dir_block, 1);
     if (prequest->buffer_size < target_node->i_size) {
+        return -1;  // Kekecilan
     }
     memcpy(prequest->buf, dataBuf.buf, target_node->i_size);
-    return 0;
+    return 0;  
 }
 
 int8_t read(struct EXT2DriverRequest request) {
     uint32_t parent_inode = request.parent_inode;
     if (parent_inode == 0) {
-        return 4;
+        return -1; // Parent inode nya ga valid karena ga mungkin 0
     }
+    
     uint32_t parent_bgd = inode_to_bgd(parent_inode);
     uint32_t parent_local = inode_to_local(parent_inode);
     struct BlockBuffer buf;
@@ -308,13 +310,17 @@ int8_t read(struct EXT2DriverRequest request) {
     uint32_t parent_block_index = parent_itb + (parent_local / INODES_PER_TABLE);
     read_blocks(&buf, parent_block_index, 1);
     struct EXT2Inode *parent_node = &((struct EXT2Inode *)buf.buf)[parent_local % INODES_PER_TABLE];
+    
     if ((parent_node->i_mode & EXT2_S_IFDIR) == 0) {
-        return 4;
+        return -1; // Parentnya bukan folder
     }
+    
     bool found = false;
     uint32_t entry_inode = 0;
     uint32_t entry_file_type = 0;
     uint32_t blocks = parent_node->i_blocks;
+    
+    
     for (uint32_t bi = 0; bi < blocks && !found; bi++) {
         uint32_t block_id = parent_node->i_block[bi];
         if (block_id == 0) break;
@@ -337,12 +343,15 @@ int8_t read(struct EXT2DriverRequest request) {
             offset += entry->rec_len;
         }
     }
+    
     if (!found) {
-        return 3;
+        return 2; // File nya ga nemu di folde rparent 
     }
+    
     if (entry_file_type != EXT2_FT_REG_FILE) {
-        return 1;
+        return 1; // Bukan File rek
     }
+    
     uint32_t file_inode = entry_inode;
     uint32_t file_bgd = inode_to_bgd(file_inode);
     uint32_t file_local = inode_to_local(file_inode);
@@ -351,11 +360,15 @@ int8_t read(struct EXT2DriverRequest request) {
     read_blocks(&buf, file_block_index, 1);
     struct EXT2Inode *file_node = &((struct EXT2Inode *)buf.buf)[file_local % INODES_PER_TABLE];
     uint32_t file_size = file_node->i_size;
+    
     if (request.buffer_size < file_size) {
-        return 2;
+        return -1; // Buffer size too small for file content
     }
+    
     uint32_t to_read = file_size;
     uint32_t copied = 0;
+    
+    // Copy direct blocks
     for (uint32_t i = 0; i < 12 && to_read > 0; i++) {
         uint32_t block_id = file_node->i_block[i];
         if (block_id == 0) break;
@@ -366,6 +379,8 @@ int8_t read(struct EXT2DriverRequest request) {
         copied += copy_len;
         to_read -= copy_len;
     }
+    
+    // Handle single indirect blocks
     if (to_read > 0 && file_node->i_block[12] != 0) {
         struct BlockBuffer indBuf;
         read_blocks(&indBuf, file_node->i_block[12], 1);
@@ -381,6 +396,8 @@ int8_t read(struct EXT2DriverRequest request) {
             to_read -= copy_len;
         }
     }
+    
+    // Handle double indirect blocks
     if (to_read > 0 && file_node->i_block[13] != 0) {
         struct BlockBuffer dblBuf;
         read_blocks(&dblBuf, file_node->i_block[13], 1);
@@ -403,7 +420,8 @@ int8_t read(struct EXT2DriverRequest request) {
             }
         }
     }
-    return 0;
+    
+    return 0; // Operation successful
 }
 
 int8_t write(struct EXT2DriverRequest *request) {
@@ -501,7 +519,7 @@ int8_t write(struct EXT2DriverRequest *request) {
 int8_t delete(struct EXT2DriverRequest request) {
     uint32_t parent_inode = request.parent_inode;
     if (parent_inode == 0) {
-        return 3;
+        return -1; // Parent inode 0 alias ga vlaid
     }
     uint32_t parent_bgd = inode_to_bgd(parent_inode);
     uint32_t parent_local = inode_to_local(parent_inode);
@@ -511,7 +529,7 @@ int8_t delete(struct EXT2DriverRequest request) {
     read_blocks(&buf, parent_block_index, 1);
     struct EXT2Inode *parent_node = &((struct EXT2Inode *)buf.buf)[parent_local % INODES_PER_TABLE];
     if ((parent_node->i_mode & EXT2_S_IFDIR) == 0) {
-        return 3;
+        return -1; // Parent nya bukan folder (jaga jaga) 
     }
     bool found = false;
     uint32_t entry_block = 0;
@@ -540,7 +558,7 @@ int8_t delete(struct EXT2DriverRequest request) {
         if (found) break;
     }
     if (!found) {
-        return 1;
+        return 1; // Ga nemu foldernya di parent folder
     }
     struct BlockBuffer targetBuf;
     read_blocks(&targetBuf, entry_block, 1);
@@ -560,26 +578,26 @@ int8_t delete(struct EXT2DriverRequest request) {
         if (!entry) break;
     }
     if (!entry || entry->inode == 0) {
-        return 1;
+        return 1; // Entry not found - unchanged
     }
     bool is_dir = request.is_directory;
     if (is_dir) {
         if (entry->file_type != EXT2_FT_DIR) {
-            return 1;
+            return 1; // Bukan folder, kalalu ada mis match entry dengan flag dir
         }
         if (!is_directory_empty(entry->inode)) {
-            return 2;
+            return 2; // Kosongan
         }
     } else {
         if (entry->file_type != EXT2_FT_REG_FILE) {
-            return 1;
+            return 1; // Bukan file, kalau ada mis match entry dengan flag file
         }
     }
     deallocate_node(entry->inode);
     entry->inode = 0;
     write_blocks(&targetBuf, entry_block, 1);
     sync_metadata();
-    return 0;
+    return 0; // Operation successful - unchanged
 }
 
 uint32_t allocate_node(void) {

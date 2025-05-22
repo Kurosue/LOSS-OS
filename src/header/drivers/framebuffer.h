@@ -60,10 +60,5 @@ void framebuffer_set_cursor(uint8_t r, uint8_t c);
  */
 void framebuffer_clear(void);
 
-void putchar(char c, uint32_t color);
-
-void puts(char* string, uint32_t count, uint32_t color);
-
-void scrollDown();
 
 #endif

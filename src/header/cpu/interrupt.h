@@ -8,7 +8,7 @@
 #include "cpu/portio.h"
 #include "drivers/keyboard.h"
 #include "cpu/gdt.h"
-#include "drivers/framebuffer.h"
+#include "drivers/console.h"
 
 /* -- PIC constants -- */
 

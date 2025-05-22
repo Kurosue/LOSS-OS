@@ -18,7 +18,7 @@ void kernel_setup(void) {
     activate_keyboard_interrupt();
     framebuffer_clear();
     framebuffer_set_cursor(0, 0);
-    // console_init();
+    console_init();
     initialize_filesystem_ext2();
     gdt_install_tss();
     set_tss_register();
