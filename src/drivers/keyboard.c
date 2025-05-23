@@ -124,10 +124,8 @@ void keyboard_isr(void) {
                             ? keyboard_scancode_1_to_ascii_uppercase_map[scancode]
                             : keyboard_scancode_1_to_ascii_map[scancode];
 
-                        if (mapped >= 32 && mapped <= 126) {
+                        if (mapped) {
                             keyboard_state.keyboard_buffer = mapped;
-                        } else {
-                            keyboard_state.keyboard_buffer = 0;
                         }
                     }
                 }

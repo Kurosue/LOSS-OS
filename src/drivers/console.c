@@ -12,6 +12,7 @@ void update_cursor(uint8_t text_color) {
 void putchar(char c, uint8_t text_color) {
     if (c) {
         if (c == '\b') {
+            vga_clear_cursor(framebuffer_state.col, framebuffer_state.row);
             if (framebuffer_state.col > 0) {
                 framebuffer_state.col--;
             } 
@@ -42,40 +43,6 @@ void putchar(char c, uint8_t text_color) {
                     // TODO: implement scroll-up here if desired
                 }
             }
-        }
-        
-        update_cursor(text_color);
-    }
-    
-    uint8_t special_key = get_special_key();
-    if (special_key != KEY_NONE) {
-        vga_clear_cursor(framebuffer_state.col, framebuffer_state.row);
-        switch (special_key) {
-            case KEY_UP:
-                if (framebuffer_state.row > 0) framebuffer_state.row--;
-                break;
-                
-            case KEY_DOWN:
-                if (framebuffer_state.row < MAX_ROWS - 1) framebuffer_state.row++;
-                break;
-                
-            case KEY_LEFT:
-                if (framebuffer_state.col > 0) {
-                    framebuffer_state.col--;
-                } else if (framebuffer_state.row > 0) {
-                    framebuffer_state.row--;
-                    framebuffer_state.col = MAX_COLS - 1;
-                }
-                break;
-                
-            case KEY_RIGHT:
-                if (framebuffer_state.col < MAX_COLS - 1) {
-                    framebuffer_state.col++;
-                } else if (framebuffer_state.row < MAX_ROWS - 1) {
-                    framebuffer_state.row++;
-                    framebuffer_state.col = 0;
-                }
-                break;
         }
         update_cursor(text_color);
     }

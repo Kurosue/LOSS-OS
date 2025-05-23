@@ -4,7 +4,7 @@
 #include "drivers/framebuffer.h"
 
 struct Framebuffer framebuffer_state = {
-    .row = 0,
+    .row = 1,
     .col = 0,
     .start_row = 0,
     .start_col = 0
