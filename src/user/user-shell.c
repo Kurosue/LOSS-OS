@@ -27,6 +27,79 @@ void syscall(uint32_t eax, uint32_t ebx, uint32_t ecx, uint32_t edx) {
     __asm__ volatile("int $0x30");
 }
 
+void  findRecursive(char*target, uint32_t parent_inode, char* currentPath){
+    // here is where the fun begins, no ai involved btw, written on nvim btw, i'm single btw
+
+    char data_buffer[BLOCK_SIZE * BLOCK_COUNT] = {};
+    struct EXT2DriverRequest reqDir = {
+        .buf                   = &data_buffer,
+        .name                  = ".",
+        .parent_inode          = parent_inode,
+        .buffer_size           = BLOCK_SIZE * BLOCK_COUNT,
+        .name_len              = 1,
+    };
+    int32_t retCode;
+    syscall(1, (uint32_t) &reqDir, (uint32_t) &retCode, 0);
+    const char *final_newline = "\n";
+
+    if (retCode == 0) {
+        uint32_t current_offset = 0;
+        struct EXT2DirectoryEntry *entry;
+
+        while (current_offset < reqDir.buffer_size) {
+            entry = (struct EXT2DirectoryEntry *)(data_buffer + current_offset);
+            if (entry->inode == 0) {
+                if (entry->rec_len == 0) {
+                    break;
+                }
+                current_offset += entry->rec_len;
+                if (current_offset >= reqDir.buffer_size && entry->rec_len < sizeof(struct EXT2DirectoryEntry)) break;
+                continue;
+            }
+
+            if (current_offset + entry->rec_len > reqDir.buffer_size || entry->rec_len < (sizeof(struct EXT2DirectoryEntry) + entry->name_len)) {
+                break;
+            }
+            char *entry_name = (char *)entry + sizeof(struct EXT2DirectoryEntry);
+
+            if (entry->file_type == EXT2_FT_DIR && memcmp(entry_name, ".", 1) != 0 && memcmp(entry_name, "..", 2) != 0) {
+                char newPath[strlen(currentPath) + entry->name_len + 5];
+                newPath[0] = '\0';
+                if (append(newPath, currentPath, sizeof(newPath)) == 0 && append(newPath, entry_name, sizeof(newPath)) == 0 ){
+                    append(newPath, "/", sizeof(newPath));
+                    if(memcmp(target, entry_name, entry->name_len) == 0){
+                        syscall(6, (uint32_t) newPath, strlen(newPath), 0xF);
+                        syscall(6, (uint32_t)final_newline, strlen(final_newline), 0xF);
+                        // still calls, let's say i have folder /acep/acep/
+                        findRecursive(target, entry->inode, newPath);
+                    } else {
+                        findRecursive(target, entry->inode, newPath);
+                    }
+                } else {
+                    const char *error_message = "Error when appending folder name to path\n"; 
+                    syscall(6, (uint32_t)error_message, strlen(error_message), 0xC);
+                }
+            } else if (entry->file_type == EXT2_FT_REG_FILE){
+                char newPath[strlen(currentPath) + entry->name_len + 5];
+                newPath[0] = '\0';
+                if (append(newPath, currentPath, sizeof(newPath)) == 0 && append(newPath, entry_name, sizeof(newPath)) == 0 ){
+                    if(memcmp(target, entry_name, entry->name_len) == 0){
+                        syscall(6, (uint32_t) newPath, strlen(newPath), 0xF);
+                        syscall(6, (uint32_t)final_newline, strlen(final_newline), 0xF);
+                    } 
+                } else {
+                    const char *error_message = "Error when appending file name to path\n"; 
+                    syscall(6, (uint32_t)error_message, strlen(error_message), 0xC);
+                }
+            }
+            current_offset += entry->rec_len; 
+        }
+
+    } else {
+        const char *errMsg = "find: cannot access directory\n";
+        syscall(6, (uint32_t)errMsg, strlen(errMsg), 0x7);
+    }
+}
 // Simple string comparison function
 int strcmp(const char *s1, const char *s2) {
     while (*s1 && (*s1 == *s2)) {
@@ -450,6 +523,39 @@ void processCommand(char *command)
     } else if (memcmp(cmd, "cp", 2) == 0 && strlen(cmd) == 2) {
         if (argc >= 3) {
             // TODO: panggil fungsi_cp(argv[1], argv[2]);
+            struct BlockBuffer bf;
+            int32_t retcode = 0;
+
+            struct EXT2DriverRequest read_request = {
+                .buf                   = &bf,
+                .name                  = argv[1],
+                .parent_inode          = currentInode,
+                .buffer_size           = BLOCK_SIZE * 16,
+                .name_len              = strlen(argv[1]),
+            };
+
+            syscall(0, (uint32_t) &read_request, (uint32_t) &retcode, 0);
+
+            if (retcode != 0)
+            {
+                const char *msg = "failed to read from source file\n";
+                syscall(6, (uint32_t)msg, strlen(msg), 0x7);
+                return;
+            }
+            struct EXT2DriverRequest write_request = {
+                .buf                   = &bf,
+                .name                  = argv[2],
+                .parent_inode          = currentInode,
+                .buffer_size           = BLOCK_SIZE * 16,
+                .name_len              = strlen(argv[2]),
+            };
+            syscall(2, (uint32_t) &write_request, (uint32_t) &retcode, 0x0);
+            if (retcode != 0)
+            {
+                const char *msg = "failed to write to destination file\n";
+                syscall(6, (uint32_t)msg, strlen(msg), 0x7);
+                return;
+            }
         } else {
             const char *msg = "Usage: cp <src> <dst>\n";
             syscall(6, (uint32_t)msg, strlen(msg), 0x7);
@@ -474,6 +580,16 @@ void processCommand(char *command)
     } else if (memcmp(cmd, "find", 4) == 0 && strlen(cmd) == 4) {
         if (argc >= 2) {
             // TODO: panggil fungsi_find(argv[1]);
+            char *arg = argv[1];
+            if ((memcmp(arg, "-h", 2) == 0 && strlen(arg) == 2) || (memcmp(arg, "--help", 6) == 0 && strlen(arg) == 6)){
+                const char *msg = "Find any file/folder with name specified.\n";
+                const char *msg2 = "\n\nUsage: find <name>\n\n";
+                syscall(6, (uint32_t)msg, strlen(msg), 0xF);
+                syscall(6, (uint32_t)msg2, strlen(msg), 0xB);
+
+            } else {
+                findRecursive(arg, 1, "/");
+            }
         } else {
             const char *msg = "Usage: find <name>\n";
             syscall(6, (uint32_t)msg, strlen(msg), 0x7);
@@ -551,6 +667,5 @@ int main(void) {
         /* code */
         terminal();
     }
-    
     return 0;
 }
