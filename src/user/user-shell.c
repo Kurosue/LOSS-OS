@@ -5,6 +5,14 @@
 
 #define BLOCK_COUNT 16
 
+// Function declarations
+uint32_t get_parent_inode(uint32_t inode);
+uint32_t find_child_inode(uint32_t parent_inode, const char *name, uint8_t name_len);
+int split_path(const char *path, char components[][64], int max_components);
+int strcmp(const char *s1, const char *s2);
+void processCommand(char *command);
+void terminal(void);
+
 // Init buffer untuk menyimpan history sama current buffer comman
 char command[10][100];
 uint32_t currentInode = 1; // Init root cihuy
@@ -19,15 +27,16 @@ void syscall(uint32_t eax, uint32_t ebx, uint32_t ecx, uint32_t edx) {
     __asm__ volatile("int $0x30");
 }
 
-void  findRecursive(char*target, char* name, uint32_t name_len, uint32_t parent_inode, char* currentPath){
+void  findRecursive(char*target, uint32_t parent_inode, char* currentPath){
+    // here is where the fun begins, no ai involved btw, written on nvim btw, i'm single btw
 
     char data_buffer[BLOCK_SIZE * BLOCK_COUNT] = {};
     struct EXT2DriverRequest reqDir = {
         .buf                   = &data_buffer,
-        .name                  = name,
+        .name                  = ".",
         .parent_inode          = parent_inode,
         .buffer_size           = BLOCK_SIZE * BLOCK_COUNT,
-        .name_len              = name_len,
+        .name_len              = 1,
     };
     int32_t retCode;
     syscall(1, (uint32_t) &reqDir, (uint32_t) &retCode, 0);
@@ -54,17 +63,18 @@ void  findRecursive(char*target, char* name, uint32_t name_len, uint32_t parent_
             char *entry_name = (char *)entry + sizeof(struct EXT2DirectoryEntry);
 
             if (entry->file_type == EXT2_FT_DIR && memcmp(entry_name, ".", 1) != 0 && memcmp(entry_name, "..", 2) != 0) {
-                const char *dir_suffix = "/"; 
-                char newPath[strlen(currentPath) + entry->name_len + 2];
+                char newPath[strlen(currentPath) + entry->name_len + 5];
                 newPath[0] = '\0';
-                if (append(newPath, currentPath, sizeof(newPath)) == 0 && append(newPath, entry_name, sizeof(newPath)) == 0 && append(newPath, dir_suffix, sizeof(newPath))){
+                if (append(newPath, currentPath, sizeof(newPath)) == 0 && append(newPath, entry_name, sizeof(newPath)) == 0 ){
+                    append(newPath, "/", sizeof(newPath));
                     if(memcmp(target, entry_name, entry->name_len) == 0){
                         syscall(6, (uint32_t) newPath, strlen(newPath), 0xF);
                         syscall(6, (uint32_t)final_newline, strlen(final_newline), 0xF);
+                        // still calls, let's say i have folder /acep/acep/
+                        findRecursive(target, entry->inode, newPath);
                     } else {
-                        findRecursive(target, entry_name, entry->name_len, entry->inode, newPath);
+                        findRecursive(target, entry->inode, newPath);
                     }
-
                 } else {
                     const char *error_message = "Error when appending folder name to path\n"; 
                     syscall(6, (uint32_t)error_message, strlen(error_message), 0xC);
@@ -89,6 +99,153 @@ void  findRecursive(char*target, char* name, uint32_t name_len, uint32_t parent_
         const char *errMsg = "find: cannot access directory\n";
         syscall(6, (uint32_t)errMsg, strlen(errMsg), 0x7);
     }
+}
+// Simple string comparison function
+int strcmp(const char *s1, const char *s2) {
+    while (*s1 && (*s1 == *s2)) {
+        s1++;
+        s2++;
+    }
+    return *(unsigned char*)s1 - *(unsigned char*)s2;
+}
+
+// Helper function to get parent inode of a directory using syscalls
+uint32_t get_parent_inode(uint32_t inode) {
+    if (inode == 1) return 1; // Root's parent is itself
+    
+    // Read the directory contents using syscall
+    unsigned char data_buffer[BLOCK_SIZE * 16];
+    struct EXT2DriverRequest reqDir = {
+        .buf                   = &data_buffer,
+        .name                  = ".",
+        .parent_inode          = inode,
+        .buffer_size           = BLOCK_SIZE * 16,
+        .name_len              = 1,
+    };
+    
+    int32_t retCode = 0;
+    syscall(1, (uint32_t) &reqDir, (uint32_t) &retCode, 0); // read_directory syscall
+    
+    if (retCode != 0) return 1; // If error, return root
+    
+    // Find ".." entry (should be second entry)
+    uint32_t offset = 0;
+    
+    // Skip first entry (".")
+    struct EXT2DirectoryEntry *entry = (struct EXT2DirectoryEntry *)(data_buffer + offset);
+    if (entry->rec_len == 0) return 1;
+    offset += entry->rec_len;
+    
+    // Get second entry ("..")
+    if (offset < BLOCK_SIZE * 16) {
+        entry = (struct EXT2DirectoryEntry *)(data_buffer + offset);
+        if (entry->name_len == 2) {
+            char *name = (char *)entry + sizeof(struct EXT2DirectoryEntry);
+            if (name[0] == '.' && name[1] == '.') {
+                return entry->inode;
+            }
+        }
+    }
+    
+    return 1; // If error, return root
+}
+
+// Helper function to find child inode by name using syscalls
+uint32_t find_child_inode(uint32_t parent_inode, const char *name, uint8_t name_len) {
+    if (parent_inode == 0) return 0;
+    
+    // Read the directory contents using syscall
+    unsigned char data_buffer[BLOCK_SIZE * 16];
+    struct EXT2DriverRequest reqDir = {
+        .buf                   = &data_buffer,
+        .name                  = ".",
+        .parent_inode          = parent_inode,
+        .buffer_size           = BLOCK_SIZE * 16,
+        .name_len              = 1,
+    };
+    
+    int32_t retCode = 0;
+    syscall(1, (uint32_t) &reqDir, (uint32_t) &retCode, 0); // read_directory syscall
+    
+    if (retCode != 0) return 0; // Error reading directory
+    
+    // Search through directory entries
+    uint32_t offset = 0;
+    while (offset < BLOCK_SIZE * 16) {
+        struct EXT2DirectoryEntry *entry = (struct EXT2DirectoryEntry *)(data_buffer + offset);
+        
+        if (entry->rec_len == 0 || offset + entry->rec_len > BLOCK_SIZE * 16) break;
+        
+        if (entry->inode != 0 && entry->file_type == EXT2_FT_DIR && 
+            entry->name_len == name_len) {
+            char *entry_name = (char *)entry + sizeof(struct EXT2DirectoryEntry);
+            
+            // Compare names
+            bool match = true;
+            for (int i = 0; i < name_len; i++) {
+                if (entry_name[i] != name[i]) {
+                    match = false;
+                    break;
+                }
+            }
+            
+            if (match) {
+                return entry->inode;
+            }
+        }
+        
+        offset += entry->rec_len;
+    }
+    
+    return 0; // Not found
+}
+
+// Helper function to split path into components
+int split_path(const char *path, char components[][64], int max_components) {
+    int count = 0;
+    int i = 0;
+    int comp_start = 0;
+    int comp_len = 0;
+    
+    // Skip leading slashes
+    while (path[i] == '/') i++;
+    
+    comp_start = i;
+    
+    while (path[i] && count < max_components) {
+        if (path[i] == '/') {
+            if (comp_len > 0) {
+                // Copy component
+                if (comp_len < 63) {
+                    for (int j = 0; j < comp_len; j++) {
+                        components[count][j] = path[comp_start + j];
+                    }
+                    components[count][comp_len] = '\0';
+                    count++;
+                }
+                comp_len = 0;
+            }
+            // Skip multiple slashes
+            while (path[i] == '/') i++;
+            comp_start = i;
+        } else {
+            comp_len++;
+            i++;
+        }
+    }
+    
+    // Handle last component
+    if (comp_len > 0 && count < max_components) {
+        if (comp_len < 63) {
+            for (int j = 0; j < comp_len; j++) {
+                components[count][j] = path[comp_start + j];
+            }
+            components[count][comp_len] = '\0';
+            count++;
+        }
+    }
+    
+    return count;
 }
 
 void processCommand(char *command)
@@ -132,47 +289,135 @@ void processCommand(char *command)
     }
 
     // Pengecekan command
-    char *cmd = argv[0];
+    char *cmd = argv[0];    
     if (memcmp(cmd, "cd", 2) == 0 && strlen(cmd) == 2) {
         if (argc >= 2) {
-            // TODO: panggil fungsi_cd(argv[1]);
+            const char *path = argv[1];
+            uint32_t target_inode = currentInode;
+            
+            // Handle absolute paths (starting with /)
+            if (path[0] == '/') {
+                target_inode = 1; // Start from root
+            }
+            
+            // Split path into components
+            char components[16][64]; // Support up to 16 path components
+            int num_components = split_path(path, components, 16);
+            
+            // Navigate through each component
+            bool success = true;
+            for (int i = 0; i < num_components && success; i++) {
+                if (strlen(components[i]) == 0) {
+                    continue; // Skip empty components
+                }
+                
+                if (strcmp(components[i], ".") == 0) {
+                    // Stay in current directory
+                    continue;
+                } else if (strcmp(components[i], "..") == 0) {
+                    // Go to parent directory
+                    uint32_t parent = get_parent_inode(target_inode);
+                    if (parent != 0) {
+                        target_inode = parent;
+                    }
+                    // If we can't find parent or we're already at root, stay where we are
+                } else {
+                    // Find child directory
+                    uint32_t child = find_child_inode(target_inode, components[i], strlen(components[i]));
+                    if (child == 0) {
+                        const char *msg1 = "cd: ";
+                        const char *msg2 = ": No such directory\n";
+                        syscall(6, (uint32_t)msg1, strlen(msg1), 0x4);
+                        syscall(6, (uint32_t)components[i], strlen(components[i]), 0xF);
+                        syscall(6, (uint32_t)msg2, strlen(msg2), 0x4);
+                        success = false; // Failed to find directory
+                    } else {
+                        target_inode = child;
+                    }
+                }
+            }
+            
+            // Update current inode if successful
+            if (success) {
+                currentInode = target_inode;
+            }
         } else {
-            const char *msg = "Usage: cd <dir>\n";
-            syscall(6, (uint32_t)msg, strlen(msg), 0x7);
+            // If no argument provided, go to root directory
+            currentInode = 1;
         }
-
     } else if (memcmp(cmd, "ls", 2) == 0 && strlen(cmd) == 2) {
-        // Construct EXT2DriverReq buat currInode
+        // Debug: Print current inode
+        const char *debug_msg = "Current inode: ";
+        syscall(6, (uint32_t)debug_msg, strlen(debug_msg), 0x7);
+        
+        // Simple way to print the number (convert to string manually)
+        uint32_t inode_num = currentInode;
+        char inode_str[16];
+        int inode_len = 0;
+        if (inode_num == 0) {
+            inode_str[0] = '0';
+            inode_len = 1;
+        } else {
+            // Convert number to string (reverse order first)
+            while (inode_num > 0) {
+                inode_str[inode_len++] = '0' + (inode_num % 10);
+                inode_num /= 10;
+            }
+            // Reverse the string
+            for (int i = 0; i < inode_len / 2; i++) {
+                char temp = inode_str[i];
+                inode_str[i] = inode_str[inode_len - 1 - i];
+                inode_str[inode_len - 1 - i] = temp;
+            }
+        }
+        syscall(6, (uint32_t)inode_str, inode_len, 0xF);
+        const char *newline = "\n";
+        syscall(6, (uint32_t)newline, 1, 0xF);
+        
+        // Read the current directory contents using read_directory syscall
         int32_t retCode = 0;
         unsigned char data_buffer[BLOCK_SIZE * 16];
+        
         struct EXT2DriverRequest reqDir = {
             .buf                   = &data_buffer,
             .name                  = ".",
-            .parent_inode          = 1,
+            .parent_inode          = currentInode,
             .buffer_size           = BLOCK_SIZE * 16,
             .name_len              = 1,
         };
-        syscall(1, (uint32_t) &reqDir,(uint32_t) &retCode, 0);
+        
+        syscall(1, (uint32_t) &reqDir, (uint32_t) &retCode, 0); // read_directory syscall
+        
+        const char *retcode_msg = "Return code: ";
+        syscall(6, (uint32_t)retcode_msg, strlen(retcode_msg), 0x7);
+        char ret_str[4];
+        if (retCode == 0) ret_str[0] = '0';
+        else if (retCode == 1) ret_str[0] = '1';
+        else if (retCode == 2) ret_str[0] = '2';
+        else ret_str[0] = '?';
+        syscall(6, (uint32_t)ret_str, 1, 0xF);
+        syscall(6, (uint32_t)newline, 1, 0xF);
+        
         if (retCode == 0) {
             uint32_t current_offset = 0;
             struct EXT2DirectoryEntry *entry;
 
-            while (current_offset < reqDir.buffer_size) {
+            while (current_offset < BLOCK_SIZE * 16) {
                 entry = (struct EXT2DirectoryEntry *)(data_buffer + current_offset);
-                if (entry->inode == 0) {
-                    if (entry->rec_len == 0) {
-                        break;
-                    }
-                    current_offset += entry->rec_len;
-                    if (current_offset >= reqDir.buffer_size && entry->rec_len < sizeof(struct EXT2DirectoryEntry)) break;
-                    continue;
-                }
-
-                if (current_offset + entry->rec_len > reqDir.buffer_size || entry->rec_len < (sizeof(struct EXT2DirectoryEntry) + entry->name_len)) {
+                
+                // Check for end of entries
+                if (entry->rec_len == 0 || current_offset + entry->rec_len > BLOCK_SIZE * 16) {
                     break;
                 }
+                
+                // Skip empty entries
+                if (entry->inode == 0) {
+                    current_offset += entry->rec_len;
+                    continue;
+                }
+                
+                // Print ALL entries for debugging (including . and ..)
                 char *entry_name = (char *)entry + sizeof(struct EXT2DirectoryEntry);
-
                 syscall(6, (uint32_t)entry_name, entry->name_len, 0xF);
 
                 if (entry->file_type == EXT2_FT_DIR) {
@@ -182,10 +427,11 @@ void processCommand(char *command)
                     const char *file_suffix = "  "; 
                     syscall(6, (uint32_t)file_suffix, strlen(file_suffix), 0xF);
                 }
-                current_offset += entry->rec_len; 
+                
+                current_offset += entry->rec_len;
             }
-            const char *final_newline = "\n";
-            syscall(6, (uint32_t)final_newline, strlen(final_newline), 0xF);
+            
+            syscall(6, (uint32_t)newline, 1, 0xF);
 
         } else {
             const char *errMsg = "ls: cannot access directory\n";
@@ -193,15 +439,65 @@ void processCommand(char *command)
         }
     } else if (memcmp(cmd, "mkdir", 5) == 0 && strlen(cmd) == 5) {
         if (argc >= 2) {
-            // TODO: panggil fungsi_mkdir(argv[1]);
-        } else {
+            int32_t retcode = 0;
+
+            struct EXT2DriverRequest request = {
+                .buf                   = NULL,
+                .name                  = argv[1],
+                .parent_inode          = currentInode,
+                .buffer_size           = 0,
+                .name_len              = strlen(argv[1]),
+                .is_directory          = true,
+            };
+
+            syscall(2, (uint32_t) &request, (uint32_t) &retcode, 0);
+            
+            if (retcode == -1)
+            {
+                const char *msg = "mkdir failed\n";
+                syscall(6, (uint32_t)msg, strlen(msg), 0x7);
+            }
+            else if (retcode == 1)
+            {
+                const char *msg = "mkdir: directory already exists\n";
+                syscall(6, (uint32_t)msg, strlen(msg), 0x7);
+            }
+            else
+            {
+                const char *msg = "mkdir success\n";
+                syscall(6, (uint32_t)msg, strlen(msg), 0x7);
+            }
+        } 
+        else {
             const char *msg = "Usage: mkdir <dir>\n";
             syscall(6, (uint32_t)msg, strlen(msg), 0x7);
         }
 
     } else if (memcmp(cmd, "cat", 3) == 0 && strlen(cmd) == 3) {
         if (argc >= 2) {
-            // TODO: panggil fungsi_cat(argv[1]);
+            struct BlockBuffer bf;
+            int32_t retcode = 0;
+
+            struct EXT2DriverRequest request = {
+                .buf                   = &bf,
+                .name                  = argv[1],
+                .parent_inode          = currentInode,
+                .buffer_size           = BLOCK_SIZE * 16,
+                .name_len              = strlen(argv[1]),
+            };
+
+            syscall(0, (uint32_t) &request, (uint32_t) &retcode, 0);
+
+            if (retcode == 0)
+            {
+                const char *msg = (char *) bf.buf;
+                syscall(6, (uint32_t)msg, strlen(msg), 0x7);
+            }
+            else
+            {
+                const char *msg = "cat failed\n";
+                syscall(6, (uint32_t)msg, strlen(msg), 0x7);
+            }
         } else {
             const char *msg = "Usage: cat <file>\n";
             syscall(6, (uint32_t)msg, strlen(msg), 0x7);
@@ -242,8 +538,7 @@ void processCommand(char *command)
                 syscall(6, (uint32_t)msg2, strlen(msg), 0xB);
 
             } else {
-                // here is where the fun begins, no ai involved btw, written on nvim btw, i'm single btw
-                findRecursive(arg, ".", 1, 1, "/");
+                findRecursive(arg, 1, "/");
             }
         } else {
             const char *msg = "Usage: find <name>\n";
@@ -313,8 +608,5 @@ int main(void) {
         /* code */
         terminal();
     }
-
-
-
     return 0;
 }
