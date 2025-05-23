@@ -192,22 +192,30 @@ void processCommand(char *command)
      */
     // Split string comman dan args nya
     // buang leading spaces dan newline
+    // State Argv string
     while (*p == ' ' || *p == '\n') p++;
-
     while (*p && argc < 10) {
-        argv[argc++] = p;
-        // cari akhir token: space atau newline
-        while (*p && *p != ' ' && *p != '\n') p++;
-
-        if (*p == ' ') {
-            *p = '\0';
+        while (*p == ' ') p++;
+        if (!*p) break;
+    
+        if (*p == '"') {
             p++;
-            // skip multiple spaces
+            argv[argc++] = p;
+        
+            while (*p && *p != '"') p++;
+                if (*p == '"') {
+                    *p = '\0';
+                    p++;
+                }
+        
             while (*p == ' ') p++;
-        }
-        else if (*p == '\n') {
-            *p = '\0';
-            break;       // langsung keluar, newline tidak jadi argv
+        } else {
+            argv[argc++] = p;
+            while (*p && *p != ' ' && *p != '\n') p++;
+            if (*p) {
+                *p = '\0';
+                p++;
+            }
         }
     }
 
@@ -275,7 +283,7 @@ void processCommand(char *command)
     } else if (memcmp(cmd, "ls", 2) == 0 && strlen(cmd) == 2) {
         // Debug: Print current inode
         const char *debug_msg = "Current inode: ";
-        syscall(6, (uint32_t)debug_msg, strlen(debug_msg), 0x7);
+        syscall(6, (uint32_t)debug_msg, strlen(debug_msg), 0xC);
         
         // Simple way to print the number (convert to string manually)
         uint32_t inode_num = currentInode;
@@ -362,7 +370,7 @@ void processCommand(char *command)
 
         } else {
             const char *errMsg = "ls: cannot access directory\n";
-            syscall(6, (uint32_t)errMsg, strlen(errMsg), 0x7);
+            syscall(6, (uint32_t)errMsg, strlen(errMsg), 0xC);
         }
     } else if (memcmp(cmd, "mkdir", 5) == 0 && strlen(cmd) == 5) {
         if (argc >= 2) {
@@ -402,11 +410,11 @@ void processCommand(char *command)
 
     } else if (memcmp(cmd, "cat", 3) == 0 && strlen(cmd) == 3) {
         if (argc >= 2) {
-            struct BlockBuffer bf;
+            char data_buffer[BLOCK_SIZE * 16] = {};
             int32_t retcode = 0;
 
             struct EXT2DriverRequest request = {
-                .buf                   = &bf,
+                .buf                   = &data_buffer,
                 .name                  = argv[1],
                 .parent_inode          = currentInode,
                 .buffer_size           = BLOCK_SIZE * 16,
@@ -417,13 +425,22 @@ void processCommand(char *command)
 
             if (retcode == 0)
             {
-                const char *msg = (char *) bf.buf;
-                syscall(6, (uint32_t)msg, strlen(msg), 0x7);
+                syscall(6, (uint32_t)data_buffer, strlen(data_buffer), 0x7);
+            }
+            else if (retcode == 1)
+            {
+                const char *msg = "cat: file not found\n";
+                syscall(6, (uint32_t)msg, strlen(msg), 0xC);
+            }
+            else if (retcode == 2)
+            {
+                const char *msg = "cat: not a file\n";
+                syscall(6, (uint32_t)msg, strlen(msg), 0xC);
             }
             else
             {
-                const char *msg = "cat failed\n";
-                syscall(6, (uint32_t)msg, strlen(msg), 0x7);
+                const char *msg = "cat: unknown error\n";
+                syscall(6, (uint32_t)msg, strlen(msg), 0xC);
             }
         } else {
             const char *msg = "Usage: cat <file>\n";
@@ -461,10 +478,19 @@ void processCommand(char *command)
             const char *msg = "Usage: find <name>\n";
             syscall(6, (uint32_t)msg, strlen(msg), 0x7);
         }
+    } else if (memcmp(cmd, "echo", 4) == 0 && strlen(cmd) == 4){
+        if (argc >= 2) {
+            syscall(6, (uint32_t)argv[1], strlen(argv[1]), 0xF);
+            syscall(5, (uint32_t)'\n', 0xF, 0);
+        } else {
+            const char *msg = "Usage: echo <text> [> <file_name>]\n";
+            syscall(6, (uint32_t)msg, strlen(msg), 0x7);
+        }
+
 
     } else {
         const char *msg = "Error: Command ";
-        const char *nmsg = " is not available !!\n";
+        const char *nmsg = " is not available !!\n";    
         syscall(6, (uint32_t) msg, strlen(msg), 0x4);
         syscall(6, (uint32_t) cmd, strlen(cmd), 0xF);
         syscall(6, (uint32_t) nmsg, strlen(nmsg), 0x4);
