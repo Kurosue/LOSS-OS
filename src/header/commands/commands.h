@@ -4,3 +4,4 @@
 #include "commands/mkdir.h"
 #include "commands/find.h"
 #include "commands/echo.h"
+#include "commands/rm.h"

@@ -79,10 +79,8 @@ void processCommand(char *command)
         // TODO: panggil fungsi_cp(argv[1], argv[2]);
     } 
 
-    else if (memcmp(cmd, "rm", 2) == 0 && strlen(cmd) == 2) {
-        
-        // TODO: panggil fungsi_rm(argv[1]);
-    } 
+    else if (memcmp(cmd, "rm", 2) == 0 && strlen(cmd) == 2)
+        rm(currentInode, argc, argv);
     
     else if (memcmp(cmd, "mv", 2) == 0 && strlen(cmd) == 2) {
         
