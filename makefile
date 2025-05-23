@@ -62,7 +62,7 @@ iso: kernel
 	@rm -r $(BUILD_DIR)/iso/
 
 # Build everything
-build: clean disk insert-shell iso
+build: iso
 
 # Run in QEMU
 run: build
@@ -102,4 +102,4 @@ user-shell:
 
 insert-shell: inserter user-shell
 	@echo Inserting shell into root directory... 
-	@cd $(BUILD_DIR); ./inserter shell 1 $(DISK_NAME).bin
+	@cd $(BUILD_DIR); echo "KakasAi" > razi.txt;./inserter shell 1 $(DISK_NAME).bin; ./inserter razi.txt 1 $(DISK_NAME).bin
