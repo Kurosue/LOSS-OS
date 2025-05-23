@@ -1,0 +1,5 @@
+#include "commands/cat.h"
+#include "commands/cd.h"
+#include "commands/ls.h"
+#include "commands/mkdir.h"
+#include "commands/find.h"
