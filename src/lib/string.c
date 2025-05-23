@@ -52,3 +52,28 @@ size_t strlen(const char *str) {
     }
     return len;
 }
+
+size_t split(char *str, char delim, char **out, size_t max_tokens) {
+    if (!str || !out || max_tokens == 0) return 0;
+    size_t count = 0;
+    char *p = str;
+    out[count++] = p;
+    while (*p && count < max_tokens) {
+        if (*p == delim) {
+            *p = '\0';
+            if (*(p + 1) != '\0') {
+                out[count++] = p + 1;
+            }
+        }
+        p++;
+    }
+    return count;
+}
+
+int append(char *dest, const char *src, size_t bufsize) {
+    size_t dlen = strlen(dest);
+    size_t slen = strlen(src);
+    if (dlen + slen + 1 > bufsize) return -1;
+    memcpy(dest + dlen, src, slen + 1);
+    return 0;
+}
