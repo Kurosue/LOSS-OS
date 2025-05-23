@@ -10,6 +10,7 @@
         "disk.h": "c",
         "paging.h": "c",
         "console.h": "c",
-        "interrupt.h": "c"
+        "interrupt.h": "c",
+        "graphics.h": "c"
     },
 }

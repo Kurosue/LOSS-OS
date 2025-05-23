@@ -10,14 +10,14 @@ void vga_init(void) {
     tmp = in(VGA_CRTC_DATA);
     out(VGA_CRTC_DATA, tmp & 0x7F);
 
-    out(VGA_MISC_WRITE, 0xE3);  // See VGA mode 12h sample&#8203;:contentReference[oaicite:16]{index=16}
+    out(VGA_MISC_WRITE, 0xE3);  // See VGA mode 12h s
 
     // Sequencer registers (0x3C4/3C5)
     out(VGA_SEQ_INDEX, 0x00); out(VGA_SEQ_DATA, 0x03);  // Reset (synchronous)
-    out(VGA_SEQ_INDEX, 0x01); out(VGA_SEQ_DATA, 0x01);  // Clocking Mode = 1 (no shift)&#8203;:contentReference[oaicite:17]{index=17}
+    out(VGA_SEQ_INDEX, 0x01); out(VGA_SEQ_DATA, 0x01);  // Clocking Mode = 1 (no shift)
     out(VGA_SEQ_INDEX, 0x02); out(VGA_SEQ_DATA, 0x0F);  // Map Mask = 0x0F (enable all 4 planes)
     out(VGA_SEQ_INDEX, 0x03); out(VGA_SEQ_DATA, 0x00);  // Character Map Select = 0
-    out(VGA_SEQ_INDEX, 0x04); out(VGA_SEQ_DATA, 0x02);  // Memory Mode = 2 (graphics)&#8203;:contentReference[oaicite:18]{index=18}
+    out(VGA_SEQ_INDEX, 0x04); out(VGA_SEQ_DATA, 0x02);  // Memory Mode = 2 (graphics)
 
     // Graphics Controller registers (0x3CE/3CF)
     out(VGA_GC_INDEX, 0x00); out(VGA_GC_DATA, 0x00);   // Set/Reset = 0
@@ -25,8 +25,8 @@ void vga_init(void) {
     out(VGA_GC_INDEX, 0x02); out(VGA_GC_DATA, 0x00);   // Color Compare = 0
     out(VGA_GC_INDEX, 0x03); out(VGA_GC_DATA, 0x00);   // Data Rotate = 0 (write mode 0)
     out(VGA_GC_INDEX, 0x04); out(VGA_GC_DATA, 0x00);   // Read Map Select = 0 (plane 0)
-    out(VGA_GC_INDEX, 0x05); out(VGA_GC_DATA, 0x00);   // Graphics Mode = 0 (graphics)&#8203;:contentReference[oaicite:19]{index=19}
-    out(VGA_GC_INDEX, 0x06); out(VGA_GC_DATA, 0x05);   // Miscellaneous = 0x05 (enable even/odd)&#8203;:contentReference[oaicite:20]{index=20}
+    out(VGA_GC_INDEX, 0x05); out(VGA_GC_DATA, 0x00);   // Graphics Mode = 0 (graphics)
+    out(VGA_GC_INDEX, 0x06); out(VGA_GC_DATA, 0x05);   // Miscellaneous = 0x05 (enable even/odd)
     out(VGA_GC_INDEX, 0x07); out(VGA_GC_DATA, 0x0F);   // Color Don't Care = 0x0F
     out(VGA_GC_INDEX, 0x08); out(VGA_GC_DATA, 0xFF);   // Bit Mask = 0xFF (no mask)
 
@@ -51,13 +51,13 @@ void vga_init(void) {
     out(VGA_CRTC_INDEX, 0x15); out(VGA_CRTC_DATA, 0xE7); // Vertical Blank Start = 231
     out(VGA_CRTC_INDEX, 0x16); out(VGA_CRTC_DATA, 0x04); // Vertical Blank End = 4
     out(VGA_CRTC_INDEX, 0x17); out(VGA_CRTC_DATA, 0xE3); // Mode Control = 0xE3
-    // (Values above taken from standard VGA mode 12h timings&#8203;:contentReference[oaicite:21]{index=21})
+    // (Values above taken from standard VGA mode 12h timing
 
     // Attribute Controller (0x3C0): reset flip-flop
     (void)in(VGA_INPUT_STATUS);
-    out(VGA_ACT_INDEX, 0x10); out(VGA_ACT_INDEX, 0x01);  // Attribute Mode Control = 1&#8203;:contentReference[oaicite:22]{index=22}
+    out(VGA_ACT_INDEX, 0x10); out(VGA_ACT_INDEX, 0x01);  // Attribute Mode Control = 1
     out(VGA_ACT_INDEX, 0x11); out(VGA_ACT_INDEX, 0x00);  // Overscan = 0
-    out(VGA_ACT_INDEX, 0x12); out(VGA_ACT_INDEX, 0x0F);  // Color Plane Enable = 0x0F&#8203;:contentReference[oaicite:23]{index=23}
+    out(VGA_ACT_INDEX, 0x12); out(VGA_ACT_INDEX, 0x0F);  // Color Plane Enable = 0x0F&#8203
     out(VGA_ACT_INDEX, 0x13); out(VGA_ACT_INDEX, 0x00);  // Horizontal Pan = 0
     out(VGA_ACT_INDEX, 0x14); out(VGA_ACT_INDEX, 0x00);  // Color Select = 0
     out(VGA_ACT_INDEX, 0x20);                            // Finalize: enable video output
@@ -70,16 +70,20 @@ void vga_draw_pixel(int x, int y, uint8_t color) {
     int byteIndex = y * VGA_PITCH + (x >> 3);
     uint8_t mask = 1 << (7 - (x & 7));
     uint8_t *vga = (uint8_t*)VGA_MEMORY;
-
-    out(VGA_SEQ_INDEX, 0x02);
-    out(VGA_SEQ_DATA, 0x0F); 
-    
-    uint8_t current = vga[byteIndex];
     
     for (int plane = 0; plane < 4; plane++) {
+        // Pilih Plane-nya
         out(VGA_SEQ_INDEX, 0x02);
-        out(VGA_SEQ_DATA, (1 << plane));  
+        out(VGA_SEQ_DATA, (1 << plane));
         
+        // Read map Select
+        out(VGA_GC_INDEX, 0x04);
+        out(VGA_GC_DATA, plane);
+        
+        // Ambil data dari planhe nya
+        uint8_t current = vga[byteIndex];
+        
+        // Ganti bit warnanya
         if (color & (1 << plane)) {
             vga[byteIndex] = current | mask;
         } else {
@@ -136,7 +140,8 @@ void vga_draw_char(int x, int y, char c, uint8_t color) {
     for(int row = 0; row < 8; row++) {
         uint8_t bits = glyph[row];
         for(int col = 0; col < 8; col++) {
-            if (bits & (1 << col)) {
+            // The font has LSB as the leftmost pixel (bit 0 = leftmost)
+            if (bits & (1 << col)) {  // Changed back to original
                 vga_draw_pixel(x + col, y + row, color);
             }
         }
