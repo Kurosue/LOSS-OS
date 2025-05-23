@@ -30,15 +30,16 @@ void cat(uint32_t current_inode, int argc, char *argv[]) {
 
         if (retcode == 0) {
             const char *msg = (char *) bf.buf;
-            syscall(6, (uint32_t)msg, strlen(msg), 0x7);
+            syscall(6, (uint32_t)msg, strlen(msg), 0xF);
+            syscall(5, (uint32_t)'\n', 0xF, 0);
         } else {
             const char *msg = "cat failed\n";
-            syscall(6, (uint32_t)msg, strlen(msg), 0x7);
+            syscall(6, (uint32_t)msg, strlen(msg), 0xF);
         }
     }
     else
     {
         const char *msg = "Usage: cat <file>\n";
-        syscall(6, (uint32_t)msg, strlen(msg), 0x7);
+        syscall(6, (uint32_t)msg, strlen(msg), 0xF);
     }
 }

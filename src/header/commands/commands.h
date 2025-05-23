@@ -3,3 +3,4 @@
 #include "commands/ls.h"
 #include "commands/mkdir.h"
 #include "commands/find.h"
+#include "commands/echo.h"

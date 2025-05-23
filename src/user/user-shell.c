@@ -31,21 +31,28 @@ void processCommand(char *command)
     // Split string command dan args nya
     // buang leading spaces dan newline
     while (*p == ' ' || *p == '\n') p++;
-
     while (*p && argc < 10) {
-        argv[argc++] = p;
-        // cari akhir token: space atau newline
-        while (*p && *p != ' ' && *p != '\n') p++;
-
-        if (*p == ' ') {
-            *p = '\0';
+        while (*p == ' ') p++;
+        if (!*p) break;
+    
+        if (*p == '"') {    
             p++;
-            // skip multiple spaces
+            argv[argc++] = p;
+        
+            while (*p && *p != '"') p++;
+                if (*p == '"') {
+                    *p = '\0';
+                    p++;
+                }
+        
             while (*p == ' ') p++;
-        }
-        else if (*p == '\n') {
-            *p = '\0';
-            break; // langsung keluar, newline tidak jadi argv
+        } else {
+            argv[argc++] = p;
+            while (*p && *p != ' ' && *p != '\n') p++;
+            if (*p) {
+                *p = '\0';
+                p++;
+            }
         }
     }
 
@@ -85,6 +92,9 @@ void processCommand(char *command)
     else if (memcmp(cmd, "find", 4) == 0 && strlen(cmd) == 4)
         find(argc, argv);
     
+    else if (memcmp(cmd, "echo", 4) == 0 && strlen(cmd) == 4)
+        echo(currentInode, argc, argv);
+
     else {
         const char *msg = "Error: Command ";
         const char *nmsg = " is not available !!\n";
