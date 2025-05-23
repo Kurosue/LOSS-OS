@@ -121,7 +121,24 @@ void processCommand(char *command)
         }
     } else if (memcmp(cmd, "mkdir", 5) == 0 && strlen(cmd) == 5) {
         if (argc >= 2) {
-            // TODO: panggil fungsi_mkdir(argv[1]);
+            int32_t retcode = 0;
+
+            struct EXT2DriverRequest request = {
+                .buf                   = NULL,
+                .name                  = argv[1],
+                .parent_inode          = currentInode,
+                .buffer_size           = 0,
+                .name_len              = strlen(argv[1]),
+                .is_directory          = true,
+            };
+
+            syscall(2, (uint32_t) &request, (uint32_t) &retcode, 0);
+            
+            if (retcode == -1)
+            {
+                const char *msg = "mkdir failed\n";
+                syscall(6, (uint32_t)msg, strlen(msg), 0x7);
+            }
         } else {
             const char *msg = "Usage: mkdir <dir>\n";
             syscall(6, (uint32_t)msg, strlen(msg), 0x7);
@@ -129,7 +146,29 @@ void processCommand(char *command)
 
     } else if (memcmp(cmd, "cat", 3) == 0 && strlen(cmd) == 3) {
         if (argc >= 2) {
-            // TODO: panggil fungsi_cat(argv[1]);
+            struct BlockBuffer bf;
+            int32_t retcode = 0;
+
+            struct EXT2DriverRequest request = {
+                .buf                   = &bf,
+                .name                  = argv[1],
+                .parent_inode          = currentInode,
+                .buffer_size           = BLOCK_SIZE * 16,
+                .name_len              = strlen(argv[1]),
+            };
+
+            syscall(0, (uint32_t) &request, (uint32_t) &retcode, 0);
+
+            if (retcode == 0)
+            {
+                const char *msg = (char *) bf.buf;
+                syscall(6, (uint32_t)msg, strlen(msg), 0x7);
+            }
+            else
+            {
+                const char *msg = "cat failed\n";
+                syscall(6, (uint32_t)msg, strlen(msg), 0x7);
+            }
         } else {
             const char *msg = "Usage: cat <file>\n";
             syscall(6, (uint32_t)msg, strlen(msg), 0x7);
