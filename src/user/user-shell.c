@@ -177,6 +177,39 @@ void processCommand(char *command)
     } else if (memcmp(cmd, "cp", 2) == 0 && strlen(cmd) == 2) {
         if (argc >= 3) {
             // TODO: panggil fungsi_cp(argv[1], argv[2]);
+            struct BlockBuffer bf;
+            int32_t retcode = 0;
+
+            struct EXT2DriverRequest read_request = {
+                .buf                   = &bf,
+                .name                  = argv[1],
+                .parent_inode          = currentInode,
+                .buffer_size           = BLOCK_SIZE * 16,
+                .name_len              = strlen(argv[1]),
+            };
+
+            syscall(0, (uint32_t) &read_request, (uint32_t) &retcode, 0);
+
+            if (retcode != 0)
+            {
+                const char *msg = "failed to read from source file\n";
+                syscall(6, (uint32_t)msg, strlen(msg), 0x7);
+                return;
+            }
+            struct EXT2DriverRequest write_request = {
+                .buf                   = &bf,
+                .name                  = argv[2],
+                .parent_inode          = currentInode,
+                .buffer_size           = BLOCK_SIZE * 16,
+                .name_len              = strlen(argv[2]),
+            };
+            syscall(2, (uint32_t) &write_request, (uint32_t) &retcode, 0x0);
+            if (retcode != 0)
+            {
+                const char *msg = "failed to write to destination file\n";
+                syscall(6, (uint32_t)msg, strlen(msg), 0x7);
+                return;
+            }
         } else {
             const char *msg = "Usage: cp <src> <dst>\n";
             syscall(6, (uint32_t)msg, strlen(msg), 0x7);
