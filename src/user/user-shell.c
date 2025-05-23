@@ -1,11 +1,13 @@
 #include <stdint.h>
 #include "filesystem/ext2.h"
 #include "lib/string.h"
+// #include "commands/commands.h"
 
 #define BLOCK_COUNT 16
 
 // Init buffer untuk menyimpan history sama current buffer comman
 char command[10][100];
+uint32_t currentInode = 1; // Init root cihuy
 
 void syscall(uint32_t eax, uint32_t ebx, uint32_t ecx, uint32_t edx) {
     __asm__ volatile("mov %0, %%ebx" : /* <Empty> */ : "r"(ebx));
@@ -68,8 +70,55 @@ void processCommand(char *command)
         }
 
     } else if (memcmp(cmd, "ls", 2) == 0 && strlen(cmd) == 2) {
-        // TODO: panggil fungsi_ls(argc >= 2 ? argv[1] : NULL);
+        // Construct EXT2DriverReq buat currInode
+        int32_t retCode = 0;
+        unsigned char data_buffer[BLOCK_SIZE * 16];
+        struct EXT2DriverRequest reqDir = {
+            .buf                   = &data_buffer,
+            .name                  = ".",
+            .parent_inode          = 1,
+            .buffer_size           = BLOCK_SIZE * 16,
+            .name_len              = 1,
+        };
+        syscall(1, (uint32_t) &reqDir,(uint32_t) &retCode, 0);
+        if (retCode == 0) {
+            uint32_t current_offset = 0;
+            struct EXT2DirectoryEntry *entry;
 
+            while (current_offset < reqDir.buffer_size) {
+                entry = (struct EXT2DirectoryEntry *)(data_buffer + current_offset);
+                if (entry->inode == 0) {
+                    if (entry->rec_len == 0) {
+                        break;
+                    }
+                    current_offset += entry->rec_len;
+                    if (current_offset >= reqDir.buffer_size && entry->rec_len < sizeof(struct EXT2DirectoryEntry)) break;
+                    continue;
+                }
+
+                if (current_offset + entry->rec_len > reqDir.buffer_size || entry->rec_len < (sizeof(struct EXT2DirectoryEntry) + entry->name_len)) {
+                    break;
+                }
+                char *entry_name = (char *)entry + sizeof(struct EXT2DirectoryEntry);
+
+                syscall(6, (uint32_t)entry_name, entry->name_len, 0xF);
+
+                if (entry->file_type == EXT2_FT_DIR) {
+                    const char *dir_suffix = "/ "; 
+                    syscall(6, (uint32_t)dir_suffix, strlen(dir_suffix), 0xA); 
+                } else {
+                    const char *file_suffix = "  "; 
+                    syscall(6, (uint32_t)file_suffix, strlen(file_suffix), 0xF);
+                }
+                current_offset += entry->rec_len; 
+            }
+            const char *final_newline = "\n";
+            syscall(6, (uint32_t)final_newline, strlen(final_newline), 0xF);
+
+        } else {
+            const char *errMsg = "ls: cannot access directory\n";
+            syscall(6, (uint32_t)errMsg, strlen(errMsg), 0x7);
+        }
     } else if (memcmp(cmd, "mkdir", 5) == 0 && strlen(cmd) == 5) {
         if (argc >= 2) {
             // TODO: panggil fungsi_mkdir(argv[1]);
@@ -120,7 +169,7 @@ void processCommand(char *command)
 
     } else {
         const char *msg = "Error: Command ";
-        const char *nmsg = " is not avalibale !!\n";
+        const char *nmsg = " is not available !!\n";
         syscall(6, (uint32_t) msg, strlen(msg), 0x4);
         syscall(6, (uint32_t) cmd, strlen(cmd), 0xF);
         syscall(6, (uint32_t) nmsg, strlen(nmsg), 0x4);
@@ -165,7 +214,6 @@ void terminal()
 }
 
 int main(void) {
-    // uint32_t currentInode = 1; // Init root cihuy
     struct BlockBuffer      bl[2]   = {0};
     struct EXT2DriverRequest request = {
         .buf                   = &bl,
