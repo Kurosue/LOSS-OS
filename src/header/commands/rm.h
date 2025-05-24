@@ -7,4 +7,4 @@
  * @param argv Argument vector
  * @param current_inode Current directory inode
  */
-void rm(uint32_t current_inode, int argc, char *argv[]);
+void rm(uint32_t current_inode, int argc,char *argv[]);

@@ -5,7 +5,6 @@
 extern void syscall(uint32_t eax, uint32_t ebx, uint32_t ecx, uint32_t edx);
 
 void ls(uint32_t current_inode) {
-    
     int32_t retCode = 0;
     unsigned char data_buffer[BLOCK_SIZE * 16];
     

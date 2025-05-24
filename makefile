@@ -62,7 +62,7 @@ iso: kernel
 	@rm -r $(BUILD_DIR)/iso/
 
 # Build everything
-build: clean disk insert-shell iso
+build: iso
 
 # Run in QEMU
 run: build
@@ -90,18 +90,12 @@ user-shell:
 	@$(ASM) $(ASMFLAGS) $(SRC_DIR)/user/crt0.s -o crt0.o
 	@$(CC)  $(CFLAGS) -fno-pie $(SRC_DIR)/user/user-shell.c -o user-shell.o
 	@$(CC)  $(CFLAGS) -fno-pie $(SRC_DIR)/lib/string.c -o string.o
-	@$(CC)  $(CFLAGS) -fno-pie $(SRC_DIR)/commands/cat.c -o cat.o
-	@$(CC)  $(CFLAGS) -fno-pie $(SRC_DIR)/commands/cd.c -o cd.o
-	@$(CC)  $(CFLAGS) -fno-pie $(SRC_DIR)/commands/find.c -o find.o
-	@$(CC)  $(CFLAGS) -fno-pie $(SRC_DIR)/commands/ls.c -o ls.o
-	@$(CC)  $(CFLAGS) -fno-pie $(SRC_DIR)/commands/mkdir.c -o mkdir.o
-	@$(CC)  $(CFLAGS) -fno-pie $(SRC_DIR)/commands/echo.c -o echo.o
-	@$(CC)  $(CFLAGS) -fno-pie $(SRC_DIR)/commands/rm.c -o rm.o
+	@$(CC)  $(CFLAGS) -fno-pie $(SRC_DIR)/commands/*.c
 	@$(LINKER) -T $(SRC_DIR)/user/user-linker.ld -melf_i386 --oformat=binary \
-		crt0.o user-shell.o string.o cat.o cd.o ls.o mkdir.o find.o echo.o rm.o -o $(BUILD_DIR)/shell
+		crt0.o user-shell.o string.o cat.o cd.o ls.o mkdir.o find.o echo.o mv.o rm.o -o $(BUILD_DIR)/shell
 	@echo Linking object shell object files and generate flat binary...
 	@$(LINKER) -T $(SRC_DIR)/user/user-linker.ld -melf_i386 --oformat=elf32-i386 \
-		crt0.o user-shell.o string.o cat.o cd.o ls.o mkdir.o find.o echo.o rm.o -o $(BUILD_DIR)/shell_elf
+		crt0.o user-shell.o string.o cat.o cd.o ls.o mkdir.o find.o echo.o rm.o mv.o -o $(BUILD_DIR)/shell_elf
 	@echo Linking object shell object files and generate ELF32 for debugging...
 	@size --target=binary $(BUILD_DIR)/shell
 	@rm -f *.o
