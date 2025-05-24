@@ -570,7 +570,7 @@ int8_t write(struct EXT2DriverRequest *request) {
 int8_t delete(struct EXT2DriverRequest request) {
     uint32_t parent_inode = request.parent_inode;
     if (parent_inode == 0) {
-        return -1; // Parent inode 0 alias ga vlaid
+        return -1; // Parent inode 0 alias ga valid
     }
     uint32_t parent_bgd = inode_to_bgd(parent_inode);
     uint32_t parent_local = inode_to_local(parent_inode);
@@ -584,71 +584,100 @@ int8_t delete(struct EXT2DriverRequest request) {
     }
     bool found = false;
     uint32_t entry_block = 0;
+    uint32_t entry_offset = 0;
+    uint32_t prev_offset = 0;
+    struct EXT2DirectoryEntry *prev_entry = NULL;
+    
     for (uint32_t bi = 0; bi < parent_node->i_blocks; bi++) {
         uint32_t block_id = parent_node->i_block[bi];
         if (block_id == 0) continue;
         struct BlockBuffer dirBuf;
         read_blocks(&dirBuf, block_id, 1);
         uint32_t offset = 0;
-        struct EXT2DirectoryEntry *entry = (struct EXT2DirectoryEntry *)dirBuf.buf;
+        prev_offset = 0;
+        prev_entry = NULL;
+        
         while (offset < BLOCK_SIZE) {
+            struct EXT2DirectoryEntry *entry = (struct EXT2DirectoryEntry *)((uint8_t *)dirBuf.buf + offset);
+            if (entry->rec_len == 0) break;
+            
             if (entry->inode != 0) {
                 uint16_t name_len = entry->name_len;
                 if (name_len == request.name_len &&
                     memcmp(get_entry_name(entry), request.name, name_len) == 0) {
                     found = true;
                     entry_block = block_id;
+                    entry_offset = offset;
                     break;
                 }
             }
-            if (entry->rec_len == 0) break;
+            
+            prev_entry = entry;
+            prev_offset = offset;
             offset += entry->rec_len;
-            entry = get_next_directory_entry(entry);
-            if (!entry) break;
         }
         if (found) break;
     }
+    
     if (!found) {
         return 1; // Ga nemu foldernya di parent folder
     }
+    
     struct BlockBuffer targetBuf;
     read_blocks(&targetBuf, entry_block, 1);
-    struct EXT2DirectoryEntry *entry = (struct EXT2DirectoryEntry *)targetBuf.buf;
-    uint32_t offset = 0;
-    while (offset < BLOCK_SIZE) {
-        if (entry->inode != 0) {
-            uint16_t name_len = entry->name_len;
-            if (name_len == request.name_len &&
-                memcmp(get_entry_name(entry), request.name, name_len) == 0) {
-                break;
-            }
-        }
-        if (entry->rec_len == 0) break;
-        offset += entry->rec_len;
-        entry = get_next_directory_entry(entry);
-        if (!entry) break;
+    struct EXT2DirectoryEntry *entry = (struct EXT2DirectoryEntry *)((uint8_t *)targetBuf.buf + entry_offset);
+    
+    if (entry->inode == 0) {
+        return 1; // Entry not found (already deleted)
     }
-    if (!entry || entry->inode == 0) {
-        return 1; // Entry not found - unchanged
-    }
+    
+    uint32_t target_inode = entry->inode;
     bool is_dir = request.is_directory;
+    
     if (is_dir) {
         if (entry->file_type != EXT2_FT_DIR) {
             return 1; // Bukan folder, kalalu ada mis match entry dengan flag dir
         }
-        if (!is_directory_empty(entry->inode)) {
-            return 2; // Kosongan
+        if (!is_directory_empty(target_inode)) {
+            return 2; // Folder not empty
         }
     } else {
         if (entry->file_type != EXT2_FT_REG_FILE) {
             return 1; // Bukan file, kalau ada mis match entry dengan flag file
         }
     }
-    deallocate_node(entry->inode);
-    entry->inode = 0;
+    
+    uint32_t target_bgd = inode_to_bgd(target_inode);
+    uint32_t target_local = inode_to_local(target_inode);
+    uint32_t target_itb = bgdtCache.table[target_bgd].bg_inode_table;
+    uint32_t target_block_index = target_itb + (target_local / INODES_PER_TABLE);
+    
+    struct BlockBuffer inodeBuf;
+    read_blocks(&inodeBuf, target_block_index, 1);
+
+    deallocate_node(target_inode);
+    
+    if (prev_entry) {
+        struct EXT2DirectoryEntry *prev = (struct EXT2DirectoryEntry *)((uint8_t *)targetBuf.buf + prev_offset);
+        // Hapus entry jadi nya kosong alias 0 semua
+        prev->rec_len += entry->rec_len;
+        entry->inode = 0;
+        entry->rec_len = 0;
+        for (uint8_t i = 0; i < entry->name_len; i++) {
+            get_entry_name(entry)[i] = 0; // Clear the name
+        }
+        entry->file_type = 0; // Clear the file type
+        entry->name_len = 0; // Clear the name length
+    } else {
+        // If this was the first entry, mark it as unused but keep its rec_len
+        entry->inode = 0;
+    }
+    
+    // Write changes back to disk
     write_blocks(&targetBuf, entry_block, 1);
     sync_metadata();
-    return 0; // Operation successful - unchanged
+    
+    return 0; // Operation successful
 }
 
 uint32_t allocate_node(void) {
