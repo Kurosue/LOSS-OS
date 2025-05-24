@@ -5,12 +5,14 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-#define PAGE_ENTRY_COUNT 1024
-// PF Size: (1 << 22) B = 4*1024*1024 B = 4 MiB. PF memory total: 4*32 = 128 MB
+// Note: MB often referring to MiB in context of memory management
+#define SYSTEM_MEMORY_MB     128
+
+#define PAGE_ENTRY_COUNT     1024
+// Page Frame (PF) Size: (1 << 22) B = 4*1024*1024 B = 4 MiB
 #define PAGE_FRAME_SIZE      (1 << (2 + 10 + 10))
-#define PAGE_FRAME_MAX_COUNT 32
-// Used for memory manager, invalid physical page frame value for higher half kernel
-#define PAGE_FRAME_UNMAPPED  0xFF
+// Maximum usable page frame. Default count: 128 / 4 = 32 page frame
+#define PAGE_FRAME_MAX_COUNT ((SYSTEM_MEMORY_MB << 20) / PAGE_FRAME_SIZE)
 
 // Operating system page directory, using page size PAGE_FRAME_SIZE (4 MiB)
 extern struct PageDirectory _paging_kernel_page_directory;
@@ -21,19 +23,24 @@ extern struct PageDirectory _paging_kernel_page_directory;
 /**
  * Page Directory Entry Flag, only first 8 bit
  * 
- * @param present_bit       Indicate whether this entry is exist or not
- * ...
+ * @param present_bit           indicate whether this entry is exist or not
+ * @param write_bit             writes may not be allowed to the 4-MByte page, if 0
+ * @param user_supervisor       user-mode accesses are not allowed to the 4-MByte page referenced by this entry, if 0
+ * @param pwt                   page-level-write-through, indirectly determine the memory type
+ * @param pcd                   page-level cache disable, indirectly determine the memory type
+ * @param accessed              indicate if software has accessed the page referenced by this entry
+ * @param dirty                 indicate if software has written to the page referenced by this entry
+ * @param use_pagesize_4_mb     always 1, since it's always true
  */
 struct PageDirectoryEntryFlag {
-    // TODO : Continue. Note: Only 8-bit flags
-    uint8_t present_bit         : 1;
-    uint8_t write_bit           : 1;
-    uint8_t user_sv             : 1;
-    uint8_t write_through       : 1;
-    uint8_t disable_cache       : 1;
-    uint8_t accessed            : 1;
-    uint8_t dirty               : 1;
-    uint8_t use_pagesize_4_mb   : 1;
+    uint8_t present_bit : 1;
+    uint8_t write_bit : 1;
+    uint8_t user_supervisor : 1;
+    uint8_t pwt : 1;
+    uint8_t pcd : 1;
+    uint8_t accessed : 1;
+    uint8_t dirty : 1;
+    uint8_t use_pagesize_4_mb : 1;
 } __attribute__((packed));
 
 /**
@@ -42,23 +49,23 @@ struct PageDirectoryEntryFlag {
  *
  * @param flag            Contain 8-bit page directory entry flag
  * @param global_page     Is this page translation global & cannot be flushed?
- * ...
+ * @param ignored         3 bits ignored
+ * @param pat             Indirectly determines the memory type used to access the page, if PAT supported
+ * @param higher_address  higher addres of page (8 bits, using 4 from reserved_2 bits in manual) 
  * @param reserved_2      Reserved bit (1-bit)
- * @param lower_address   10-bit page frame lower address, note directly correspond with 4 MiB memory (= 0x40 0000 = 1
+ * @param lower_address   10-bit page frame lower address, note directly correspond with 4 MiB memory (= 0x40 0000 = 1)
  * Note:
  * - "Bits 39:32 of address" (higher_address) is 8-bit
  * - "Bits 31:22 of address" is called lower_address in kit
  */
 struct PageDirectoryEntry {
-    // TODO : Continue, Use uint16_t + bitfield here, Do not use uint8_t
     struct PageDirectoryEntryFlag flag;
-    uint16_t global_page    : 1;
-    uint16_t reserved_1     : 3;
-    uint16_t pat_bit        : 1;
-    uint16_t higher_address : 8;
-    uint16_t reserved_2     : 1;
-    uint16_t lower_address  : 10;
-
+    uint16_t global_page : 1;
+    uint16_t ignored : 3;
+    uint16_t pat : 1;
+    uint16_t higher_address : 8; // As written in notes
+    uint16_t reserved_2 : 1;
+    uint16_t lower_address : 10;
 } __attribute__((packed));
 
 /**
@@ -72,20 +79,19 @@ struct PageDirectoryEntry {
  * @param table Fixed-width array of PageDirectoryEntry with size PAGE_ENTRY_COUNT
  */
 struct PageDirectory {
-    // TODO : Implement
-    volatile struct PageDirectoryEntry table[PAGE_ENTRY_COUNT];
+    struct PageDirectoryEntry table[PAGE_ENTRY_COUNT];
 } __attribute__((packed));
 
 /**
  * Containing page manager states.
  * 
- * @param page_frame_map Keeping track empty space
+ * @param page_frame_map Keeping track empty space. True when the page frame is currently used
  * ...
  */
 struct PageManagerState {
     bool     page_frame_map[PAGE_FRAME_MAX_COUNT];
     uint32_t free_page_frame_count;
-    // TODO: Add if needed ...
+    uint8_t * physical_addr_pointr;
 } __attribute__((packed));
 
 
