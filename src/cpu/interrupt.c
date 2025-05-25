@@ -130,5 +130,23 @@ void syscall(struct InterruptFrame frame) {
         case 8:
             clear_screen();
             break;
+        case 9:
+            // create process user buat exec
+            *((int8_t*) frame.cpu.general.ecx) = process_create_user_process(
+                *(struct EXT2DriverRequest*) frame.cpu.general.ebx
+            );
+            break;
+        case 10:
+            // Kill atau terminati user based on PID
+            *((int8_t*) frame.cpu.general.ecx) = process_destroy(
+                frame.cpu.general.ebx
+            );
+            break;
+        case 11:
+            // Ambil semua proses yang sedang berjalaan untuk PS
+            *((int8_t*) frame.cpu.general.ebx) = process_get_current_running_pcb_pointer();
+            break;
+
+            
     }
 }

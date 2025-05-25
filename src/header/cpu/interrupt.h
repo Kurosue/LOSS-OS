@@ -9,6 +9,7 @@
 #include "drivers/keyboard.h"
 #include "cpu/gdt.h"
 #include "drivers/console.h"
+#include "process/process.h"
 
 /* -- PIC constants -- */
 

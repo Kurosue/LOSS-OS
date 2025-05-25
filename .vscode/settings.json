@@ -13,6 +13,7 @@
         "interrupt.h": "c",
         "graphics.h": "c",
         "commands.h": "c",
-        "framebuffer.h": "c"
+        "framebuffer.h": "c",
+        "kill.h": "c"
     },
 }

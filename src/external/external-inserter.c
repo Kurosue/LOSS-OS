@@ -67,10 +67,22 @@ int main(int argc, char *argv[]) {
     struct EXT2DriverRequest reqread;
     uint8_t *read_buffer = malloc(4*1024*1024);
 
-    request.buf = file_buffer;
-    request.buffer_size = filesize;
+
+
     request.name = name;
     request.name_len = filename_length;
+    if(memcmp(name, "bin", 3) == 0)
+    {
+        request.buf = NULL;
+        request.is_directory = true;
+        request.buffer_size = 0;
+    }
+    else
+    {
+        request.buf = file_buffer;
+        request.is_directory = false;
+        request.buffer_size = filesize;
+    }
     request.is_directory = false;
     sscanf(argv[2], "%u", &request.parent_inode);
     sscanf(argv[1], "%s", request.name);
