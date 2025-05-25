@@ -465,107 +465,152 @@ int8_t read(struct EXT2DriverRequest request) {
     return 0; // Operation successful
 }
 
-// Completely rewritten write function with safer logic
 int8_t write(struct EXT2DriverRequest *request) {
-    if (request == NULL) return -1;
+    if (!request) return -1;
     uint32_t parent_inode = request->parent_inode;
     if (parent_inode == 0) return 2;
-    
+
+    /* Load parent inode */
     uint32_t parent_bgd = inode_to_bgd(parent_inode);
     uint32_t parent_local = inode_to_local(parent_inode);
+    uint32_t itb = bgdtCache.table[parent_bgd].bg_inode_table;
+    uint32_t block_idx = itb + (parent_local / INODES_PER_TABLE);
     struct BlockBuffer buf;
-    uint32_t parent_itb = bgdtCache.table[parent_bgd].bg_inode_table;
-    uint32_t parent_block_index = parent_itb + (parent_local / INODES_PER_TABLE);
-    read_blocks(&buf, parent_block_index, 1);
-    struct EXT2Inode *parent_node = &((struct EXT2Inode *)buf.buf)[parent_local % INODES_PER_TABLE];
-    
-    if ((parent_node->i_mode & EXT2_S_IFDIR) == 0) return 2;
-    
-    uint32_t parent_block = parent_node->i_block[0];
-    struct BlockBuffer parentDirBuf;
-    read_blocks(&parentDirBuf, parent_block, 1);
-    
-    uint32_t offset = 0;
-    uint32_t last_entry_offset = 0;
-    struct EXT2DirectoryEntry *last_entry = NULL;
-    
-    while (offset < BLOCK_SIZE) {
-        struct EXT2DirectoryEntry *entry = (struct EXT2DirectoryEntry *)((uint8_t *)parentDirBuf.buf + offset);
-        
-        if (entry->rec_len == 0 || 
-            entry->rec_len < sizeof(struct EXT2DirectoryEntry) || 
-            offset + entry->rec_len > BLOCK_SIZE) {
-            break;
+    read_blocks(&buf, block_idx, 1);
+    struct EXT2Inode *parent = &((struct EXT2Inode *)buf.buf)[parent_local % INODES_PER_TABLE];
+    if ((parent->i_mode & EXT2_S_IFDIR) == 0) return 2;
+
+    uint16_t need_rec = get_entry_record_len(request->name_len);
+    bool is_dir = (request->buffer_size == 0 && request->is_directory);
+
+    /* Search existing directory blocks for space */
+    for (uint32_t bi = 0; bi < parent->i_blocks; bi++) {
+        uint32_t blk = parent->i_block[bi];
+        if (!blk) continue;
+        struct BlockBuffer dbuf;
+        read_blocks(&dbuf, blk, 1);
+        uint32_t off = 0;
+        while (off < BLOCK_SIZE) {
+            struct EXT2DirectoryEntry *e = (struct EXT2DirectoryEntry *)(dbuf.buf + off);
+            uint16_t actual = get_entry_record_len(e->name_len);
+            if (e->inode != 0) {
+                /* check for duplicate */
+                if (e->name_len == request->name_len &&
+                    memcmp(get_entry_name(e), request->name, e->name_len) == 0) {
+                    return 1;
+                }
+            }
+            /* space after this entry? */
+            if (e->inode != 0 && e->rec_len > actual) {
+                uint16_t hole = e->rec_len - actual;
+                if (hole >= need_rec) {
+                    /* allocate new inode */
+                    uint32_t new_ino = allocate_node();
+                    if (!new_ino) return -1;
+                    /* init new inode */
+                    uint32_t new_bgd = inode_to_bgd(new_ino);
+                    uint32_t new_loc = inode_to_local(new_ino);
+                    uint32_t new_itb = bgdtCache.table[new_bgd].bg_inode_table;
+                    struct BlockBuffer inbuf;
+                    read_blocks(&inbuf, new_itb + (new_loc / INODES_PER_TABLE), 1);
+                    struct EXT2Inode *ni = &((struct EXT2Inode *)inbuf.buf)[new_loc % INODES_PER_TABLE];
+                    if (is_dir) {
+                        init_directory_table(ni, new_ino, parent_inode);
+                        bgdtCache.table[new_bgd].bg_used_dirs_count++;
+                    } else {
+                        ni->i_mode = EXT2_S_IFREG;
+                        ni->i_size = request->buffer_size;
+                        ni->i_blocks = (request->buffer_size + BLOCK_SIZE -1)/BLOCK_SIZE;
+                        allocate_node_blocks(request->buf, ni, new_bgd);
+                    }
+                    sync_node(ni, new_ino);
+                    /* insert entry */
+                    uint32_t new_off = off + actual;
+                    struct EXT2DirectoryEntry *ne = (struct EXT2DirectoryEntry *)(dbuf.buf + new_off);
+                    ne->inode = new_ino;
+                    ne->name_len = request->name_len;
+                    ne->file_type = is_dir ? EXT2_FT_DIR : EXT2_FT_REG_FILE;
+                    ne->rec_len = hole;
+                    memcpy(get_entry_name(ne), request->name, request->name_len);
+                    /* shrink existing entry rec_len */
+                    e->rec_len = actual;
+                    write_blocks(&dbuf, blk, 1);
+                    sync_metadata();
+                    return 0;
+                }
+            }
+            if (e->rec_len == 0) break;
+            off += e->rec_len;
         }
-        
-        if (entry->inode != 0 && entry->name_len == request->name_len) {
-            char *name = get_entry_name(entry);
-            if (memcmp(name, request->name, request->name_len) == 0) {
-                return 1;
+    }
+
+    /* No space found: allocate new block
+       expand parent directory */
+    /* find free block for directory */
+    uint32_t newblock = 0;
+    for (uint32_t bg = parent_bgd; bg < GROUPS_COUNT; bg++) {
+        if (bgdtCache.table[bg].bg_free_blocks_count) {
+            struct BlockBuffer bmp;
+            read_blocks(&bmp, bgdtCache.table[bg].bg_block_bitmap, 1);
+            for (uint32_t b=0; b<BLOCK_SIZE; b++) {
+                if (bmp.buf[b] != 0xFF) {
+                    for (uint8_t bit=0; bit<8; bit++) {
+                        uint32_t idx = b*8 + bit;
+                        if (idx>=BLOCKS_PER_GROUP) break;
+                        if (!(bmp.buf[b]&(1<<bit))) {
+                            bmp.buf[b] |= (1<<bit);
+                            write_blocks(&bmp, bgdtCache.table[bg].bg_block_bitmap, 1);
+                            bgdtCache.table[bg].bg_free_blocks_count--;
+                            superBlock.s_free_blocks_count--;
+                            newblock = bg * BLOCKS_PER_GROUP + idx;
+                            break;
+                        }
+                    }
+                }
+                if (newblock) break;
             }
         }
-        
-        last_entry = entry;
-        last_entry_offset = offset;
-        offset += entry->rec_len;
+        if (newblock) break;
     }
-    
-    if (last_entry == NULL) return -1;
-    
-    uint32_t new_inode = allocate_node();
-    if (new_inode == 0) return -1;
-    
-    uint32_t new_bgd = inode_to_bgd(new_inode);
-    uint32_t new_local = inode_to_local(new_inode);
-    uint32_t new_itb = bgdtCache.table[new_bgd].bg_inode_table;
-    uint32_t new_block_index = new_itb + (new_local / INODES_PER_TABLE);
-    struct BlockBuffer newInodeBuf;
-    read_blocks(&newInodeBuf, new_block_index, 1);
-    struct EXT2Inode *new_node = &((struct EXT2Inode *)newInodeBuf.buf)[new_local % INODES_PER_TABLE];
-    
-    bool is_dir = (request->buffer_size == 0);
-    
+    if (!newblock) return -1;
+    /* append to parent */
+    parent->i_block[parent->i_blocks++] = newblock;
+    parent->i_size += BLOCK_SIZE;
+    /* prepare block buffer */
+    struct BlockBuffer dbuf;
+    memset(&dbuf, 0, BLOCK_SIZE);
+    /* single entry covers whole block */
+    struct EXT2DirectoryEntry *e0 = (struct EXT2DirectoryEntry *)dbuf.buf;
+    e0->inode = allocate_node();
+    if (!e0->inode) return -1;
+    uint32_t new_ino = e0->inode;
+    uint32_t bgc = inode_to_bgd(new_ino);
+    uint32_t loc = inode_to_local(new_ino);
+    struct BlockBuffer inb;
+    read_blocks(&inb, bgdtCache.table[bgc].bg_inode_table + (loc/INODES_PER_TABLE), 1);
+    struct EXT2Inode *ni = &((struct EXT2Inode *)inb.buf)[loc%INODES_PER_TABLE];
     if (is_dir) {
-        init_directory_table(new_node, new_inode, parent_inode);
-        bgdtCache.table[new_bgd].bg_used_dirs_count++;
+        init_directory_table(ni, new_ino, parent_inode);
+        bgdtCache.table[bgc].bg_used_dirs_count++;
     } else {
-        new_node->i_mode = EXT2_S_IFREG;
-        new_node->i_size = request->buffer_size;
-        uint32_t blocks_needed = (request->buffer_size + BLOCK_SIZE - 1) / BLOCK_SIZE;
-        new_node->i_blocks = blocks_needed;
-        allocate_node_blocks(request->buf, new_node, new_bgd);
+        ni->i_mode = EXT2_S_IFREG;
+        ni->i_size = request->buffer_size;
+        ni->i_blocks = (request->buffer_size + BLOCK_SIZE -1)/BLOCK_SIZE;
+        allocate_node_blocks(request->buf, ni, bgc);
     }
-    
-    sync_node(new_node, new_inode);
-    
-    uint16_t needed_size = get_entry_record_len(request->name_len);
-    uint16_t last_actual_size = get_entry_record_len(last_entry->name_len);
-    
-    if (last_entry->rec_len < last_actual_size + needed_size) {
-        deallocate_node(new_inode);
-        return -1;
-    }
-    
-    uint32_t new_entry_offset = last_entry_offset + last_actual_size;
-    struct EXT2DirectoryEntry *new_entry = (struct EXT2DirectoryEntry *)((uint8_t *)parentDirBuf.buf + new_entry_offset);
-    
-    new_entry->inode = new_inode;
-    new_entry->name_len = request->name_len;
-    new_entry->file_type = is_dir ? EXT2_FT_DIR : EXT2_FT_REG_FILE;
-    new_entry->rec_len = last_entry->rec_len - last_actual_size;
-    
-    char *name_ptr = (char *)new_entry + sizeof(struct EXT2DirectoryEntry);
-    for (uint8_t i = 0; i < request->name_len; i++) {
-        name_ptr[i] = request->name[i];
-    }
-    
-    last_entry->rec_len = last_actual_size;
-    
-    write_blocks(&parentDirBuf, parent_block, 1);
+    sync_node(ni, new_ino);
+    e0->name_len = request->name_len;
+    e0->file_type = is_dir ? EXT2_FT_DIR : EXT2_FT_REG_FILE;
+    e0->rec_len = BLOCK_SIZE;
+    memcpy(get_entry_name(e0), request->name, request->name_len);
+
+    write_blocks(&dbuf, newblock, 1);
+    /* write updated parent inode and metadata */
+    write_blocks(&buf, block_idx, 1);
     sync_metadata();
-    
     return 0;
 }
+
 
 int8_t delete(struct EXT2DriverRequest request) {
     uint32_t parent_inode = request.parent_inode;
