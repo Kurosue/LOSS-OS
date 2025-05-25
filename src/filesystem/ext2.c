@@ -14,6 +14,7 @@ static struct EXT2Superblock superBlock;
 static struct EXT2BlockGroupDescriptorTable bgdtCache;
 
 char *get_entry_name(void *entry) {
+    // Name setelah entry( implisit)
     return (char *)entry + sizeof(struct EXT2DirectoryEntry);
 }
 
@@ -22,11 +23,13 @@ struct EXT2DirectoryEntry *get_directory_entry(void *ptr, uint32_t offset) {
 }
 
 struct EXT2DirectoryEntry *get_next_directory_entry(struct EXT2DirectoryEntry *entry) {
+    // Reclen ~ offset next entry
     if (!entry) return NULL;
     return (struct EXT2DirectoryEntry *)((uint8_t *)entry + entry->rec_len);
 }
 
 uint16_t get_entry_record_len(uint8_t name_len) {
+    // Reclen = sizeof(EXT2DirectoryEntry) + name_len
     uint16_t size = sizeof(struct EXT2DirectoryEntry) + name_len;
     uint16_t rec_len = (size + 3) & ~3;
     if (rec_len == 0) {
@@ -36,6 +39,7 @@ uint16_t get_entry_record_len(uint8_t name_len) {
 }
 
 uint32_t get_dir_first_child_offset(void *ptr) {
+    // Dapatin offset dari entry pertama ke entry selanjutnya
     struct EXT2DirectoryEntry *entry = (struct EXT2DirectoryEntry *)ptr;
     if (!entry) return 0;
     uint32_t offset = entry->rec_len;
@@ -45,17 +49,23 @@ uint32_t get_dir_first_child_offset(void *ptr) {
     return offset;
 }
 
+// Asumsi file disimpan kaya matriks, jadi row == bgdt dan col == inode table. 
+// 1-based inode num
+
 uint32_t inode_to_bgd(uint32_t inode) {
+    // Indeks bgdt (inode_num - 1 // INODES_PER_GROUP)
     if (inode == 0) return 0;
     return (inode - 1) / INODES_PER_GROUP;
 }
 
 uint32_t inode_to_local(uint32_t inode) {
+    // Indeks bgdt (inode_num - 1 // INODES_PER_GROUP)
     if (inode == 0) return 0;
     return (inode - 1) % INODES_PER_GROUP;
 }
 
 static void sync_metadata() {
+    // Update superblock dan bgdt misal ada perubahan pada inode dan block serta group
     struct BlockBuffer buf;
     memcpy(buf.buf, &superBlock, sizeof(superBlock));
     write_blocks(&buf, 1, 1);
@@ -253,7 +263,7 @@ bool is_directory_empty(uint32_t inode) {
     struct EXT2Inode *node = &((struct EXT2Inode *)buf.buf)[local % INODES_PER_TABLE];
 
     if ((node->i_mode & EXT2_S_IFDIR) == 0) {
-        return false;
+        return false; // Bukan dir
     }
 
     uint32_t dir_block = node->i_block[0];
