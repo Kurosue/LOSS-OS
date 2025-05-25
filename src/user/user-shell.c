@@ -89,6 +89,9 @@ void processCommand(char *command)
     
     else if (memcmp(cmd, "echo", 4) == 0 && strlen(cmd) == 4)
         echo(currentInode, argc, argv);
+    
+    else if (memcmp(cmd, "flex", 4) == 0 && strlen(cmd) == 4)
+        flex(argc, argv);
 
     else {
         const char *msg = "Error: Command ";

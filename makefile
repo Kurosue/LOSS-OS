@@ -92,10 +92,10 @@ user-shell:
 	@$(CC)  $(CFLAGS) -fno-pie $(SRC_DIR)/lib/string.c -o string.o
 	@$(CC)  $(CFLAGS) -fno-pie $(SRC_DIR)/commands/*.c
 	@$(LINKER) -T $(SRC_DIR)/user/user-linker.ld -melf_i386 --oformat=binary \
-		crt0.o user-shell.o string.o cat.o cd.o ls.o mkdir.o find.o echo.o rm.o mv.o cp.o -o $(BUILD_DIR)/shell
+		crt0.o user-shell.o string.o cat.o cd.o ls.o mkdir.o find.o echo.o rm.o mv.o cp.o flex.o -o $(BUILD_DIR)/shell
 	@echo Linking object shell object files and generate flat binary...
 	@$(LINKER) -T $(SRC_DIR)/user/user-linker.ld -melf_i386 --oformat=elf32-i386 \
-		crt0.o user-shell.o string.o cat.o cd.o ls.o mkdir.o find.o echo.o rm.o mv.o cp.o -o $(BUILD_DIR)/shell_elf
+		crt0.o user-shell.o string.o cat.o cd.o ls.o mkdir.o find.o echo.o rm.o mv.o cp.o flex.o -o $(BUILD_DIR)/shell_elf
 	@echo Linking object shell object files and generate ELF32 for debugging...
 	@size --target=binary $(BUILD_DIR)/shell
 	@rm -f *.o
