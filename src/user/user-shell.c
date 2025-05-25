@@ -11,6 +11,7 @@ void terminal(void);
 // Init buffer untuk menyimpan history sama current buffer command
 char command[10][100];
 uint32_t currentInode = 1; // Init root cihuy
+char *path = "/";
 
 void syscall(uint32_t eax, uint32_t ebx, uint32_t ecx, uint32_t edx) {
     __asm__ volatile("mov %0, %%ebx" : /* <Empty> */ : "r"(ebx));
@@ -99,6 +100,17 @@ void processCommand(char *command)
     else if (memcmp(cmd, "touch", 5) == 0 && strlen(cmd) == 5)
         touch(currentInode, argc, argv);    
 
+    else if (memcmp(cmd, "kill", 4) == 0 && strlen(cmd) == 4)
+        kill(argc, argv);
+
+    else if (memcmp(cmd, "ps", 2) == 0 && strlen(cmd) == 2) {
+        syscall(11,0,0,0);
+        syscall(5, (uint32_t) '\n', 0xF, 0);
+        syscall(5, (uint32_t) '\n', 0xF, 0);
+    }
+    else if (memcmp(cmd, "exec", 4) == 0 && strlen(cmd) == 4)
+        exec(argc, argv);
+
     else {
         const char *msg = "Error: Command ";
         const char *nmsg = " is not available !!\n";
@@ -112,9 +124,12 @@ void terminal()
 {
     // Pemanis sahaja biar keren
     char *user = "kiwz";
-    char *OSname = "@LOSS-2025:";
+    char *OSname = "@LOSS-2025";
     syscall(6, (uint32_t) user, strlen(user), 0xA);
     syscall(6, (uint32_t) OSname, strlen(OSname), 0xF);
+    syscall(6, (uint32_t) path, strlen(path), 0xF);
+    syscall(6, (uint32_t) " $ ", 3, 0xF);
+
 
     // Input keyboard
     char buf = 0;

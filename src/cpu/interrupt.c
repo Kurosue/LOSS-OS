@@ -142,11 +142,59 @@ void syscall(struct InterruptFrame frame) {
                 frame.cpu.general.ebx
             );
             break;
-        case 11:
-            // Ambil semua proses yang sedang berjalaan untuk PS
-            *((int8_t*) frame.cpu.general.ebx) = process_get_current_running_pcb_pointer();
-            break;
+        case 11: {
+            // Langsung disini karena address yang direturn bisa menyebabkan page fault kalau sampe user mode
+            struct ProcessControlBlock *_process_list = process_get_current_running_pcb_pointer();
+            puts("PID   Name                            State", strlen("PID  Name                            State"), 0xD);
+            putchar('\n', 0xC);
+            for (int i = 0; i < PROCESS_COUNT_MAX; i++) {
+                struct ProcessControlBlock *pcb = &_process_list[i];
+                if (pcb->metadata.pid == 0 && pcb->metadata.process_state == READY) {
+                    continue;
+                }
 
-            
+                char *state_str;
+                switch (pcb->metadata.process_state) {
+                    case RUNNING: state_str = "RUNNING"; break;
+                    case READY:   state_str = "READY";   break;
+                    case BLOCK:   state_str = "BLOCKED"; break;
+                    default:      state_str = "UNKNOWN"; break;
+                }
+                puts(itoa(pcb->metadata.pid), strlen(itoa(pcb->metadata.pid)), 0xE);
+                puts("      ", strlen("      ") - strlen(itoa(pcb->metadata.pid)), 0xE);
+                puts(pcb->metadata.name, strlen(pcb->metadata.name), 0xE);
+                puts("                                ", strlen("                                ") - strlen(pcb->metadata.name), 0xC);
+                puts(state_str, strlen(state_str), 0xE);
+            }
+            break;
+        }
+           
     }
+}
+
+char* itoa(int i) {
+    static char buffer[12];
+    char *ptr = buffer + sizeof(buffer) - 1;
+    *ptr = '\0';
+
+    if (i == 0) {
+        *--ptr = '0';
+        return ptr;
+    }
+
+    int sign = i < 0 ? -1 : 1;
+    if (sign < 0) {
+        i = -i;
+    }
+
+    while (i > 0) {
+        *--ptr = (i % 10) + '0';
+        i /= 10;
+    }
+
+    if (sign < 0) {
+        *--ptr = '-';
+    }
+
+    return ptr;
 }

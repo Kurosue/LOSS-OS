@@ -2,7 +2,7 @@
 
 extern void syscall(uint32_t eax, uint32_t ebx, uint32_t ecx, uint32_t edx);
 
-void exec(uint32_t currentInode, int argc, char *argv[]) {
+void exec(int argc, char *argv[]) {
     if (argc < 2) {
         const char *msg = "Usage: exec <program> [args...]\n";
         syscall(6, (uint32_t)msg, strlen(msg), 0x7);
@@ -31,7 +31,7 @@ void exec(uint32_t currentInode, int argc, char *argv[]) {
         syscall(5, (uint32_t)'\n', 0, 0);
         return;
     }
-    uint32_t retCode;
+
     syscall(9, (uint32_t) &req, (uint32_t) &retCode, 0);
     if(retCode == 1)
     {

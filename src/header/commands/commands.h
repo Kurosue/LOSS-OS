@@ -10,5 +10,4 @@
 #include "commands/flex.h"
 #include "commands/touch.h"
 #include "commands/exec.h"
-#include "commands/ps.h"
 #include "commands/kill.h"

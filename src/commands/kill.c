@@ -2,12 +2,12 @@
 
 extern void syscall(uint32_t eax, uint32_t ebx, uint32_t ecx, uint32_t edx);
 
-void kill(int argc, char argv[]){
+void kill(int argc, char *argv[]){
     if (argc < 2) {
-        puts("Usage: kill <pid>\n");
+        syscall(6, (uint32_t)"Usage: kill <pid>\n", 18, 0xC);
         return;
     }
-    uint32_t pid = atoi(argv[1]);
+    int pid = atoi(argv[1]);
     if(pid == -1){
         syscall(6, (uint32_t)"Invalid PID\n", 13, 0xC);
         return;
@@ -20,7 +20,7 @@ void kill(int argc, char argv[]){
     }
 }
 
-uint32_t atoi(const char *str) {
+int atoi(char *str) {
     int result = 0;
     int sign = 1;
     int valid = 0;

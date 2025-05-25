@@ -9,7 +9,6 @@
 #include "drivers/keyboard.h"
 #include "cpu/gdt.h"
 #include "drivers/console.h"
-#include "process/process.h"
 
 /* -- PIC constants -- */
 
@@ -97,6 +96,8 @@ struct CPURegister {
     } __attribute__((packed)) segment;
 } __attribute__((packed));
 
+#include "process/process.h"
+
 /**
  * InterruptStack, data pushed by CPU when interrupt / exception is raised.
  * Refer to Intel x86 Vol 3a: Figure 6-4 Stack usage on transfer to Interrupt.
@@ -175,5 +176,7 @@ void pic_remap(void);
 void main_interrupt_handler(struct InterruptFrame frame);
 
 void syscall(struct InterruptFrame frame);
+
+char* itoa(int i);
 
 #endif
