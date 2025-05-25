@@ -137,21 +137,30 @@ void syscall(struct InterruptFrame frame) {
             );
             break;
         case 10:
+            // Exit dari process
+            struct ProcessControlBlock* current = process_get_current_running_pcb_pointer();
+            if (current == NULL) {
+                // Gagal: tidak ada proses aktif? fallback
+                while (1) asm volatile("hlt");
+            }
+
+            uint32_t pid = current->metadata.pid;
+            process_destroy(pid);
+            scheduler_switch_to_next_process();
+
+        case 11:
             // Kill atau terminati user based on PID
             *((int8_t*) frame.cpu.general.ecx) = process_destroy(
                 frame.cpu.general.ebx
             );
             break;
-        case 11: {
+        case 12: {
             // Langsung disini karena address yang direturn bisa menyebabkan page fault kalau sampe user mode
-            struct ProcessControlBlock *_process_list = process_get_current_running_pcb_pointer();
             puts("PID   Name                            State", strlen("PID  Name                            State"), 0xD);
             putchar('\n', 0xC);
-            for (int i = 0; i < PROCESS_COUNT_MAX; i++) {
+            for (uint32_t i = 0; i < PROCESS_COUNT_MAX; i++){
+                if (!process_manager_state.is_process_active[i]) continue;
                 struct ProcessControlBlock *pcb = &_process_list[i];
-                if (pcb->metadata.pid == 0 && pcb->metadata.process_state == READY) {
-                    continue;
-                }
 
                 char *state_str;
                 switch (pcb->metadata.process_state) {

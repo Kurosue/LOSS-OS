@@ -97,6 +97,7 @@ struct CPURegister {
 } __attribute__((packed));
 
 #include "process/process.h"
+#include "process/scheduler.h"
 
 /**
  * InterruptStack, data pushed by CPU when interrupt / exception is raised.
