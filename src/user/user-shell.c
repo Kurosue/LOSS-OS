@@ -93,6 +93,12 @@ void processCommand(char *command)
     else if (memcmp(cmd, "flex", 4) == 0 && strlen(cmd) == 4)
         flex(argc, argv);
 
+    else if (memcmp(cmd, "clear", 5) == 0 && strlen(cmd) == 5)
+        syscall(8,0,0,0);
+
+    else if (memcmp(cmd, "touch", 5) == 0 && strlen(cmd) == 5)
+        touch(currentInode, argc, argv);    
+
     else {
         const char *msg = "Error: Command ";
         const char *nmsg = " is not available !!\n";

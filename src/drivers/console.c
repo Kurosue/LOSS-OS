@@ -30,6 +30,7 @@ void putchar(char c, uint8_t text_color) {
             framebuffer_state.col = 0;
             if (framebuffer_state.row >= MAX_ROWS) {
                 framebuffer_state.row = MAX_ROWS - 1;
+                // scroll_down();
             }
         } 
         else {
@@ -40,9 +41,30 @@ void putchar(char c, uint8_t text_color) {
                 framebuffer_state.col = 0;
                 if (framebuffer_state.row >= MAX_ROWS) {
                     framebuffer_state.row = MAX_ROWS - 1;
-                    // TODO: implement scroll-up here if desired
+                    // scroll_down();
                 }
             }
+        }
+        update_cursor(text_color);
+    }
+
+    uint8_t key = get_special_key();
+    // Cuma untuk handle left ama right arrow
+    if (key == KEY_LEFT) { // Left arrow
+        vga_clear_cursor(framebuffer_state.col, framebuffer_state.row);
+        if (framebuffer_state.col > 0) {
+            framebuffer_state.col--;
+        } 
+        else if (framebuffer_state.row > 0) {
+            framebuffer_state.row--;
+            framebuffer_state.col = MAX_COLS - 1;
+        }
+        update_cursor(text_color);
+    } 
+    else if (key == KEY_RIGHT) { // Right arrow
+        vga_clear_cursor(framebuffer_state.col, framebuffer_state.row);
+        if (framebuffer_state.col < MAX_COLS - 1) {
+            framebuffer_state.col++;
         }
         update_cursor(text_color);
     }
@@ -55,4 +77,15 @@ void puts(char* string, uint32_t count, uint8_t text_color) {
     for (i = 0; i < count && string[i] != '\0'; i++) {
         putchar(string[i], text_color);
     }
+}
+
+void clear_screen() {
+    for (int row = 0; row < framebuffer_state.row; row++) {
+        for (int col = 0; col < VGA_WIDTH/8; col++) {
+            vga_draw_char(col, row, ' ', 0);
+        }
+    }
+    framebuffer_state.col = 0;
+    framebuffer_state.row = 1;
+    update_cursor(0xF);
 }

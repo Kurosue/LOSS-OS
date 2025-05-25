@@ -15,5 +15,6 @@ void console_init(void);
 void update_cursor(uint8_t text_color);
 void putchar(char c, uint8_t text_color);
 void puts(char* string, uint32_t count, uint8_t text_color);
+void clear_screen();
 
 #endif

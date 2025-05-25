@@ -12,6 +12,7 @@
         "console.h": "c",
         "interrupt.h": "c",
         "graphics.h": "c",
-        "commands.h": "c"
+        "commands.h": "c",
+        "framebuffer.h": "c"
     },
 }
