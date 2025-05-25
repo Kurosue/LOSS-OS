@@ -11,7 +11,7 @@ struct ProcessManagerState process_manager_state = {
         [0 ... PROCESS_COUNT_MAX-1] = false
     },
     .active_process_count = 0,
-    .current_running_pid = 0xFFFFFFFF // No process running yet
+    .current_running_pid = NO_RUNNING_PROCESS // No process is running yet
 };
 
 
