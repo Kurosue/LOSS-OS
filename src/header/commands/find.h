@@ -10,8 +10,6 @@ void findRecursive(char* target, uint32_t parent_inode, char* currentPath);
 
 /**
  * Print file contents command
- * @param filename Name of file to display
- * @param current_inode Current directory inode
  * @param argc Argument count
  * @param argv Argument vector
  * @return void

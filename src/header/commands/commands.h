@@ -7,4 +7,5 @@
 #include "commands/rm.h"
 #include "commands/cp.h"
 #include "commands/mv.h"
+#include "commands/flex.h"
 #include "commands/touch.h"

@@ -1,4 +1,5 @@
 #include "drivers/console.h"
+#include "drivers/graphics.h"
 
 void console_init() {
     vga_init();
@@ -80,11 +81,7 @@ void puts(char* string, uint32_t count, uint8_t text_color) {
 }
 
 void clear_screen() {
-    for (int row = 0; row < framebuffer_state.row; row++) {
-        for (int col = 0; col < VGA_WIDTH/8; col++) {
-            vga_draw_char(col, row, ' ', 0);
-        }
-    }
+    vga_clear(0x00);
     framebuffer_state.col = 0;
     framebuffer_state.row = 1;
     update_cursor(0xF);

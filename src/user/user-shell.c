@@ -90,6 +90,9 @@ void processCommand(char *command)
     else if (memcmp(cmd, "echo", 4) == 0 && strlen(cmd) == 4)
         echo(currentInode, argc, argv);
     
+    else if (memcmp(cmd, "flex", 4) == 0 && strlen(cmd) == 4)
+        flex(argc, argv);
+
     else if (memcmp(cmd, "clear", 5) == 0 && strlen(cmd) == 5)
         syscall(8,0,0,0);
 
