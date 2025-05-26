@@ -1,5 +1,5 @@
 #include <stdint.h>
-#include "bad-apple.h"
+#include "bad-apple.h"  // Generated via `xxd -i bad_apple.bin > bad_apple.h`
 
 void syscall(uint32_t eax, uint32_t ebx, uint32_t ecx, uint32_t edx) {
     __asm__ volatile("mov %0, %%ebx" : /* <Empty> */ : "r"(ebx));
@@ -11,8 +11,13 @@ void syscall(uint32_t eax, uint32_t ebx, uint32_t ecx, uint32_t edx) {
     __asm__ volatile("int $0x30");
 }
 
-#include <stdint.h>
-#include "bad-apple.h"  // Generated via `xxd -i bad_apple.bin > bad_apple.h`
+int strlen(const char *str) {
+    int len = 0;
+    while (str[len] != '\0') {
+        len++;
+    }
+    return len;
+}
 
 #define ENC_HEIGHT 30
 #define ENC_WIDTH 60
@@ -29,7 +34,7 @@ int main(void) {
     uint8_t last[BLOCK_COUNT][8] = {{0}};
     uint8_t curr[BLOCK_COUNT][8];
     unsigned int idx = 0;
-    int delay_us = 1000000 / FPS;
+    // int delay_us = 1000000 / FPS;
 
     while (idx < file_size) {
         uint8_t count = data[idx++];
@@ -68,22 +73,24 @@ int main(void) {
         syscall(8, 0, 0, 0);
         for (int by = 0; by < BLOCK_ROWS; by++) {
             for (int dy = 0; dy < 8; dy++) {
+                char row[BLOCK_COLS * 8 + 5];
+                row[0] = '\0';
                 for (int bx = 0; bx < BLOCK_COLS; bx++) {
                     uint8_t byte = curr[by * BLOCK_COLS + bx][dy];
                     for (int bit = 7; bit >= 0; bit--) {
-                        syscall(5, (uint32_t) ((byte >> bit) & 1 ? '#' : ' '), 0xF, 0);
+                        row[bx * 8 + (7 - bit)] = ((byte >> bit) & 1 ? '#' : ' ');
                     }
                 }
+                syscall(6, (uint32_t) row, strlen(row), 0xF );
                 syscall(5, (uint32_t) '\n', 0xF, 0);
             }
         }
 
         // busy wait
-        for(volatile int i = 0; i < delay_us * 10; i++) {
-            // This is a busy wait loop to simulate the delay.
-            // In a real application, you might want to use a more efficient sleep function.
-        }
+        // syscall(13, (uint32_t) 25, 0, 0);
     }
+
+    syscall(10, 0, 0, 0);
 
     return 0;
 }

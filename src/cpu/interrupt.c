@@ -1,5 +1,5 @@
 #include "cpu/interrupt.h"
-
+#include "process/scheduler.h"
 
 void io_wait(void) {
     out(0x80, 0);
@@ -59,6 +59,20 @@ void main_interrupt_handler(struct InterruptFrame frame)
             break;
         case IRQ_KEYBOARD + PIC1_OFFSET: // Keyboard (33)
             keyboard_isr();
+            break;
+        case IRQ_TIMER + PIC1_OFFSET: // Timer (32)
+            struct Context ctx = {
+                .cpu = frame.cpu,
+                .eip = frame.int_stack.eip,
+                .eflags = frame.int_stack.eflags
+            };
+
+            scheduler_save_context_to_current_running_pcb(ctx);
+
+            pic_ack(IRQ_TIMER);
+            pit_ticks++;
+
+            scheduler_switch_to_next_process();
             break;
 
         case 0x30: // System call (48)
@@ -135,7 +149,6 @@ void syscall(struct InterruptFrame frame) {
             *((int8_t*) frame.cpu.general.ecx) = process_create_user_process(
                 *(struct EXT2DriverRequest*) frame.cpu.general.ebx
             );
-            scheduler_switch_to_next_process();
             break;
         case 10:
             // Exit dari process

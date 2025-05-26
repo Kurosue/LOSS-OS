@@ -29,6 +29,7 @@
 #define PIT_CHANNEL_0_DATA_PIO 0x40
 
 struct Context; 
+extern volatile uint32_t pit_ticks;
 
 void activate_timer_interrupt(void);
 
@@ -60,5 +61,10 @@ void scheduler_save_context_to_current_running_pcb(struct Context ctx);
  * Trigger the scheduler algorithm and context switch to new process
  */
 __attribute__((noreturn)) void scheduler_switch_to_next_process(void);
+
+/**
+ * Busy-wait until the requested ms have elapsed
+ */
+// void sleep_ms(uint32_t ms);
 
 #endif
