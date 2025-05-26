@@ -16,7 +16,7 @@ void exec(int argc, char *argv[]) {
         .buf = (uint8_t*) 0, // Virtual memory address di 0
         .name = program_name,
         .parent_inode = 2, // Asumsi folder bin ada di inode 2
-        .buffer_size = 0,
+        .buffer_size = 0x100000,
         .name_len = strlen(program_name),
         .is_directory = false
     };

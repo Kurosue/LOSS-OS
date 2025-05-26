@@ -22,6 +22,8 @@
         "istream": "c",
         "functional": "c",
         "tuple": "c",
-        "utility": "c"
+        "utility": "c",
+        "scheduler.h": "c",
+        "cstdint": "c"
     },
 }

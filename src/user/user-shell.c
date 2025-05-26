@@ -165,7 +165,7 @@ int main(void) {
     struct EXT2DriverRequest request = {
         .buf                   = &bl,
         .name                  = "shell",
-        .parent_inode          = 1,
+        .parent_inode          = 2,
         .buffer_size           = BLOCK_SIZE * BLOCK_COUNT,
         .name_len = 5,
     };

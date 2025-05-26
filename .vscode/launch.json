@@ -36,6 +36,10 @@
                     "description": "Get shell symbols"
                 },
                 {
+                    "text": "add-symbol-file clock_elf",
+                    "description": "Get clock symbols"
+                },
+                {
                     "text": "set output-radix 16",
                     "description": "Use hexadecimal output"
                 }

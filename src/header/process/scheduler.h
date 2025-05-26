@@ -28,6 +28,8 @@
 
 #define PIT_CHANNEL_0_DATA_PIO 0x40
 
+struct Context; 
+
 void activate_timer_interrupt(void);
 
 /**

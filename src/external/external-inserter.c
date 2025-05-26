@@ -83,7 +83,6 @@ int main(int argc, char *argv[]) {
         request.is_directory = false;
         request.buffer_size = filesize;
     }
-    request.is_directory = false;
     sscanf(argv[2], "%u", &request.parent_inode);
     sscanf(argv[1], "%s", request.name);
 

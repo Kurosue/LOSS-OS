@@ -12,7 +12,7 @@ LINKER  = ld
 GENISO  = genisoimage
 
 # Source files - automatically find all .c and .s files
-C_SOURCES := $(shell find $(SRC_DIR) \( -path "$(SRC_DIR)/external" -o -path "$(SRC_DIR)/user" \) -prune -o -name "*.c" -print)
+C_SOURCES := $(shell find $(SRC_DIR) \( -path "$(SRC_DIR)/external" -o -path "$(SRC_DIR)/user"  \) -prune -o -name "*.c" -print)
 ASM_SOURCES := $(shell find $(SRC_DIR) \( -path "$(SRC_DIR)/external" -o -path "$(SRC_DIR)/user" \) -prune -o -name "*.s" -print)
 
 # Object files
@@ -32,7 +32,7 @@ ISOFLAGS       = -R -b boot/grub/grub1 -no-emul-boot -boot-load-size 4 -A os -in
 # Targets
 .PHONY: all clean build iso run
 
-all: clean disk insert-shell run 
+all: clean disk insert-all run 
 
 # Create directories for object files
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
@@ -103,4 +103,23 @@ user-shell:
 
 insert-shell: inserter user-shell
 	@echo Inserting shell into root directory... 
-	@cd $(BUILD_DIR); ./inserter shell 1 $(DISK_NAME).bin
+	@cd $(BUILD_DIR); ./inserter bin 1 $(DISK_NAME).bin; ./inserter shell 2 $(DISK_NAME).bin
+
+clock:
+	@$(ASM) $(ASMFLAGS) $(SRC_DIR)/external/clock/crt0.s -o crt0.o
+	@$(CC)  $(CFLAGS) -fno-pie $(SRC_DIR)/external/clock/clock.c -o clock.o
+	@$(LINKER) -T $(SRC_DIR)/user/user-linker.ld -melf_i386 --oformat=binary \
+		crt0.o clock.o -o $(BUILD_DIR)/clock
+	@echo Linking object shell object files and generate flat binary...
+	@$(LINKER) -T $(SRC_DIR)/user/user-linker.ld -melf_i386 --oformat=elf32-i386 \
+		crt0.o clock.o -o $(BUILD_DIR)/clock_elf
+	@echo Linking object shell object files and generate ELF32 for debugging...
+	@size --target=binary $(BUILD_DIR)/shell
+	@rm -f *.o
+
+insert-clock: clock
+	@echo Inserting clock into root directory... 
+	@cd $(BUILD_DIR); ./inserter clock 2 $(DISK_NAME).bin
+
+insert-all: insert-shell insert-clock
+	@echo All files inserted into disk image.
