@@ -135,6 +135,7 @@ void syscall(struct InterruptFrame frame) {
             *((int8_t*) frame.cpu.general.ecx) = process_create_user_process(
                 *(struct EXT2DriverRequest*) frame.cpu.general.ebx
             );
+            scheduler_switch_to_next_process();
             break;
         case 10:
             // Exit dari process
