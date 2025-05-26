@@ -9,28 +9,26 @@ void exec(int argc, char *argv[]) {
         return;
     }
 
-    char *program_name = argv[1];
-
 
     struct EXT2DriverRequest req = {
         .buf = (uint8_t*) 0, // Virtual memory address di 0
-        .name = program_name,
+        .name = argv[1],
         .parent_inode = 2, // Asumsi folder bin ada di inode 2
         .buffer_size = 0x100000,
-        .name_len = strlen(program_name),
+        .name_len = strlen(argv[1]),
         .is_directory = false
     };
 
     int32_t retCode;
-    syscall(0, (uint32_t)&req, (uint32_t)&retCode, 0);
+    // syscall(0, (uint32_t)&req, (uint32_t)&retCode, 0);
 
-    if (retCode != 0) {
-        const char *msg = "exec: program not found: ";
-        syscall(6, (uint32_t)msg, strlen(msg), 0x4);
-        syscall(6, (uint32_t)program_name, strlen(program_name), 0xF);
-        syscall(5, (uint32_t)'\n', 0, 0);
-        return;
-    }
+    // if (retCode != 0) {
+    //     const char *msg = "exec: program not found: ";
+    //     syscall(6, (uint32_t)msg, strlen(msg), 0x4);
+    //     syscall(6, (uint32_t)argv[1], strlen(argv[1]), 0xF);
+    //     syscall(5, (uint32_t)'\n', 0, 0);
+    //     return;
+    // }
 
     syscall(9, (uint32_t) &req, (uint32_t) &retCode, 0);
     if(retCode == 1)

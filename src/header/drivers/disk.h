@@ -20,7 +20,7 @@
 
 // Block buffer data type - @param buf Byte buffer with size of BLOCK_SIZE
 struct BlockBuffer {
-    uint8_t buf[BLOCK_SIZE * 32];
+    uint8_t buf[BLOCK_SIZE];
 } __attribute__((packed));
 
 

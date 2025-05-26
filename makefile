@@ -108,10 +108,10 @@ insert-shell: inserter user-shell
 clock:
 	@$(ASM) $(ASMFLAGS) $(SRC_DIR)/external/clock/crt0.s -o crt0.o
 	@$(CC)  $(CFLAGS) -fno-pie $(SRC_DIR)/external/clock/clock.c -o clock.o
-	@$(LINKER) -T $(SRC_DIR)/user/user-linker.ld -melf_i386 --oformat=binary \
+	@$(LINKER) -T $(SRC_DIR)/external/clock/clock-linker.ld -melf_i386 --oformat=binary \
 		crt0.o clock.o -o $(BUILD_DIR)/clock
 	@echo Linking object shell object files and generate flat binary...
-	@$(LINKER) -T $(SRC_DIR)/user/user-linker.ld -melf_i386 --oformat=elf32-i386 \
+	@$(LINKER) -T $(SRC_DIR)/external/clock/clock-linker.ld -melf_i386 --oformat=elf32-i386 \
 		crt0.o clock.o -o $(BUILD_DIR)/clock_elf
 	@echo Linking object shell object files and generate ELF32 for debugging...
 	@size --target=binary $(BUILD_DIR)/shell

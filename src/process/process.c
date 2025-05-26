@@ -61,6 +61,15 @@ int32_t process_create_user_process(struct EXT2DriverRequest request) {
     int32_t p_index = process_list_get_inactive_index();
     struct ProcessControlBlock *new_pcb = &(_process_list[p_index]);
 
+    // Create a local copy of the filename in kernel memory
+    char filename_copy[256];
+    memset(filename_copy, 0, sizeof(filename_copy));
+    memcpy(filename_copy, request.name, request.name_len);
+    
+    // Create a copy of the entire request to work with
+    struct EXT2DriverRequest local_request = request;
+    local_request.name = filename_copy;
+
     // *** 1 - Pembuatan virtual address space baru dengan page directory ***
 
     struct PageDirectory* pd_old = paging_get_current_page_directory_addr();
@@ -71,7 +80,7 @@ int32_t process_create_user_process(struct EXT2DriverRequest request) {
     new_pcb->memory.virtual_addr_used[0] = KERNEL_VIRTUAL_ADDRESS_BASE + (void*) paging_allocate_user_page_frame(pd_new, request.buf);
     new_pcb->memory.virtual_addr_used[1] = KERNEL_VIRTUAL_ADDRESS_BASE + (void*) paging_allocate_user_page_frame(pd_new, (void*)0xBFFFFFFC);
     paging_use_page_directory(pd_new);
-    if (read(request) != 0){
+    if (read(local_request) != 0){
         retcode = PROCESS_CREATE_FAIL_FS_READ_FAILURE;
         goto exit_cleanup;
     }

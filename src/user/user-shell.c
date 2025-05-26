@@ -161,16 +161,6 @@ void terminal()
 }
 
 int main(void) {
-    struct BlockBuffer      bl[2]   = {0};
-    struct EXT2DriverRequest request = {
-        .buf                   = &bl,
-        .name                  = "shell",
-        .parent_inode          = 2,
-        .buffer_size           = BLOCK_SIZE * BLOCK_COUNT,
-        .name_len = 5,
-    };
-    int32_t retcode;
-    syscall(0, (uint32_t) &request, (uint32_t) &retcode, 0);
     syscall(7, 0, 0, 0);
     while (true)
     {
