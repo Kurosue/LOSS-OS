@@ -121,5 +121,21 @@ insert-clock: clock
 	@echo Inserting clock into root directory... 
 	@cd $(BUILD_DIR); ./inserter clock 2 $(DISK_NAME).bin
 
-insert-all: insert-shell insert-clock
+insert-all: insert-shell insert-clock insert-bad-apple
 	@echo All files inserted into disk image.
+
+bad-apple:
+	@$(ASM) $(ASMFLAGS) $(SRC_DIR)/user/crt0.s -o crt0.o
+	@$(CC)  $(CFLAGS) -fno-pie $(SRC_DIR)/external/bad-apple.c -o bad-apple.o
+	@$(LINKER) -T $(SRC_DIR)/user/user-linker.ld -melf_i386 --oformat=binary \
+		crt0.o bad-apple.o -o $(BUILD_DIR)/bad-apple
+	@echo Linking bad apple object files and generate flat binary...
+	@$(LINKER) -T $(SRC_DIR)/user/user-linker.ld -melf_i386 --oformat=elf32-i386 \
+		crt0.o bad-apple.o -o $(BUILD_DIR)/bad-apple_elf
+	@echo Linking bad apple object files and generate ELF32 for debugging...
+	@size --target=binary $(BUILD_DIR)/bad-apple
+	@rm -f *.o
+
+insert-bad-apple: inserter bad-apple
+	@echo Inserting bad-apple into root directory... 
+	@cd $(BUILD_DIR); ./inserter bad-apple 2 $(DISK_NAME).bin
