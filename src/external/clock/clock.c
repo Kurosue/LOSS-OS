@@ -1,14 +1,15 @@
 #include <stdint.h>
 
 struct cmos_reader {
-    uint8_t century;
-    uint8_t second;
-    uint8_t minute;
-    uint8_t hour;
-    uint8_t day;
-    uint8_t month;
-    uint16_t year;
+    unsigned char second, minute, hour, day, month, century;
+    unsigned int year;
 };
+struct draw_info {
+    uint32_t x, y;
+    uint8_t color, character;
+};
+
+struct draw_info num_info;
 
 void syscall(uint32_t eax, uint32_t ebx, uint32_t ecx, uint32_t edx) {
     __asm__ volatile("mov %0, %%ebx" : /* <Empty> */ : "r"(ebx));
@@ -18,37 +19,48 @@ void syscall(uint32_t eax, uint32_t ebx, uint32_t ecx, uint32_t edx) {
     __asm__ volatile("int $0x30");
 }
 
+int strlen(const char *str) {
+    int len = 0;
+    while (str[len] != '\0') {
+        len++;
+    }
+    return len;
+}
+
 // Function to print a number with leading zero if needed
 void print_number(uint8_t num) {
+    num_info.color = 0xF;
+    
     if (num < 10) {
-        char c = '0';
-        syscall(5, (uint32_t)c, 0xF, 0);
+        num_info.character = '0';
     }
     
     // Print tens digit
     if (num >= 10) {
-        char tens = '0' + (num / 10);
-        syscall(5, (uint32_t)tens, 0xF, 0);
+        num_info.character = '0' + (num / 10);
     }
+    syscall(15, (uint32_t) &num_info, 0, 0);
+    num_info.x += 1;
     
     // Print ones digit
-    char ones = '0' + (num % 10);
-    syscall(5, (uint32_t)ones, 0xF, 0);
+    num_info.character = '0' + (num % 10);
+    syscall(15, (uint32_t) &num_info, 0, 0);
+    num_info.x += 1;
 }
 
 int main(void) {
     struct cmos_reader time_data;
     
     // Display initial message
-    const char *msg = "Clock running...\n";
-    for (int i = 0; msg[i] != '\0'; i++) {
-        syscall(5, (uint32_t)msg[i], 0xA, 0);
-    }
+    const char *msg = "\nClock running...\n\n";
+    syscall(6, (uint32_t)msg, strlen(msg), 0xA);
     
     // Continuous clock display
     while (1) {
+        num_info.x = 70;
+        num_info.y = 59;
         // Get updated time from CMOS
-        syscall(8, (uint32_t)&time_data, 0, 0);
+        syscall(14, (uint32_t)&time_data, 0, 0);
         
         // Since your CMOS driver sets binary mode (0x04), values are already in binary
         // No BCD conversion needed
@@ -57,25 +69,23 @@ int main(void) {
         uint8_t second = time_data.second;
         
         // Position cursor at bottom right (row 24, col 70)
-        // Using ANSI escape sequences
-        const char *clear_line = "\033[24;70H\033[K"; // Move and clear to end of line
-        for (int i = 0; clear_line[i] != '\0'; i++) {
-            syscall(5, (uint32_t)clear_line[i], 0xF, 0);
-        }
         
         // Display time in HH:MM:SS format
         print_number(hour);
-        char colon = ':';
-        syscall(5, (uint32_t)colon, 0xF, 0);
+        num_info.character = ':';
+        syscall(15, (uint32_t) &num_info, 0, 0);
+        num_info.x += 1;
         
         print_number(minute);
-        syscall(5, (uint32_t)colon, 0xF, 0);
+        num_info.character = ':';
+        syscall(15, (uint32_t) &num_info, 0, 0);
+        num_info.x += 1;
         
         print_number(second);
         
         // Simple delay - approximately 1 second
         // This is a crude busy wait, but works for demonstration
-        for (volatile int i = 0; i < 8000000; i++) {
+        for (volatile int i = 0; i < 10000000; i++) {
             // Busy wait
         }
     }

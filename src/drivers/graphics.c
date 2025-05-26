@@ -147,3 +147,66 @@ void vga_draw_char(int x, int y, char c, uint8_t color) {
         }
     }
 }
+
+void vga_fill8x8(int x, int y, uint8_t color) {
+    /*
+     * 22:48 CC Barat ITB
+     * Mode 12h was crawling at 1fps with pixel-by-pixel torture
+     * 640x480 planar rendering? More like 640x480 reasons to cry
+     * Finally cracked the planar write modes - this rips through memory now
+     * Went from peasant pixels to gigachad block fills
+     * Here i am standing proudly
+     *
+     * P.S. Mom, your son just made VGA his bitch
+     */
+    if (x < 0 || x + 8 > VGA_WIDTH || y < 0 || y + 8 > VGA_HEIGHT) return;
+    
+    uint8_t *vga = (uint8_t*)VGA_MEMORY;
+    int startByte = x >> 3;
+    int startBit = x & 7;
+    
+    for (int plane = 0; plane < 4; plane++) {
+
+        // select the plane for writing
+        out(VGA_SEQ_INDEX, 0x02);
+        out(VGA_SEQ_DATA, (1 << plane));
+        
+        // select the plane for reading
+        out(VGA_GC_INDEX, 0x04);
+        out(VGA_GC_DATA, plane);
+        
+        // set or not
+        uint8_t planeValue = (color & (1 << plane)) ? 0xFF : 0x00;
+        
+        if (startBit == 0) {
+            // byte-aligned (ez)
+            for (int row = 0; row < 8; row++) {
+                vga[(y + row) * VGA_PITCH + startByte] = planeValue;
+            }
+        } else {
+            // not byte-aligned (cry)
+            uint8_t leftMask = 0xFF >> startBit;
+            uint8_t rightMask = 0xFF << (8 - startBit);
+            
+            for (int row = 0; row < 8; row++) {
+                uint8_t *scanline = vga + (y + row) * VGA_PITCH;
+                
+                // first byte
+                uint8_t current = scanline[startByte];
+                if (planeValue) {
+                    scanline[startByte] = current | leftMask;
+                } else {
+                    scanline[startByte] = current & ~leftMask;
+                }
+                
+                // second
+                current = scanline[startByte + 1];
+                if (planeValue) {
+                    scanline[startByte + 1] = current | rightMask;
+                } else {
+                    scanline[startByte + 1] = current & ~rightMask;
+                }
+            }
+        }
+    }
+}

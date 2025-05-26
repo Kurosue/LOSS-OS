@@ -5,18 +5,7 @@
 #include "cpu/portio.h"
 
 #define PIT_MAX_FREQUENCY   1193182
-/*
- * @see https://wiki.osdev.org/Scheduling_Algorithms#Round_Robin
- *
- * "A frequently chosen compromise for the quantum is between 20ms and 50ms."
- * thus i chose 25ms as the time quantum
- *
- * quick math
- * 1000 / x = 25
- *        x = 1000 / 25
- *        x = 40
- */
-#define PIT_TIMER_FREQUENCY 40
+#define PIT_TIMER_FREQUENCY 1000
 #define PIT_TIMER_COUNTER   (PIT_MAX_FREQUENCY / PIT_TIMER_FREQUENCY)
 
 #define PIT_COMMAND_REGISTER_PIO          0x43
@@ -65,6 +54,6 @@ __attribute__((noreturn)) void scheduler_switch_to_next_process(void);
 /**
  * Busy-wait until the requested ms have elapsed
  */
-// void sleep_ms(uint32_t ms);
+void sleep_ms(uint32_t ms);
 
 #endif

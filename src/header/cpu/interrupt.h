@@ -7,6 +7,7 @@
 #include "filesystem/ext2.h"
 #include "cpu/portio.h"
 #include "drivers/keyboard.h"
+#include "drivers/cmos.h"
 #include "cpu/gdt.h"
 #include "drivers/console.h"
 
@@ -95,6 +96,17 @@ struct CPURegister {
         uint32_t ds;
     } __attribute__((packed)) segment;
 } __attribute__((packed));
+
+typedef struct {
+    unsigned char second, minute, hour, day, month, century;
+    unsigned int year;
+} rtc_time;
+
+typedef struct {
+    uint32_t x, y;
+    uint8_t color, character;
+} draw_info;
+
 
 #include "process/process.h"
 #include "process/scheduler.h"

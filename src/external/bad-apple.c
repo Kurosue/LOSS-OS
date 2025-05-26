@@ -36,6 +36,7 @@ int main(void) {
     unsigned int idx = 0;
     // int delay_us = 1000000 / FPS;
 
+    syscall(8, 0, 0, 0);
     while (idx < file_size) {
         uint8_t count = data[idx++];
 
@@ -70,24 +71,35 @@ int main(void) {
         }
 
         // render
-        syscall(8, 0, 0, 0);
         for (int by = 0; by < BLOCK_ROWS; by++) {
             for (int dy = 0; dy < 8; dy++) {
-                char row[BLOCK_COLS * 8 + 5];
-                row[0] = '\0';
                 for (int bx = 0; bx < BLOCK_COLS; bx++) {
-                    uint8_t byte = curr[by * BLOCK_COLS + bx][dy];
-                    for (int bit = 7; bit >= 0; bit--) {
-                        row[bx * 8 + (7 - bit)] = ((byte >> bit) & 1 ? '#' : ' ');
+                    int block_idx = by * BLOCK_COLS + bx;
+                    uint8_t byte = curr[block_idx][dy];
+
+                    int base_x = bx * 8 * 8;
+                    int base_y = by * 8 * 8 + dy * 8;
+
+                    for (int bit = 0; bit < 8; bit++) {
+                        int pixel_x = base_x + bit * 8;
+                        int pixel_y = base_y;
+                        if ((byte >> (7 - bit)) & 1) {
+                            syscall(16, (uint32_t)pixel_x, pixel_y, 0xF);
+                        } else {
+
+                            syscall(16, (uint32_t)pixel_x, pixel_y, 0x0);
+                        }
                     }
                 }
-                syscall(6, (uint32_t) row, strlen(row), 0xF );
-                syscall(5, (uint32_t) '\n', 0xF, 0);
             }
         }
 
         // busy wait
         // syscall(13, (uint32_t) 25, 0, 0);
+        for (volatile int i = 0; i < 20000000; i++) {
+            // Busy wait
+        }
+
     }
 
     syscall(10, 0, 0, 0);

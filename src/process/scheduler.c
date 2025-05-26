@@ -59,20 +59,18 @@ void scheduler_switch_to_next_process(void) {
 
 }
 
-/*
 void sleep_ms(uint32_t ms) {
     uint32_t ticks_to_wait = (ms + (1000/PIT_TIMER_FREQUENCY) - 1) / (1000/PIT_TIMER_FREQUENCY);
     uint32_t start = pit_ticks;
-    char* num = itoa(pit_ticks);
-    puts(num, strlen(num), 0xF);
-    char* wait = itoa(ticks_to_wait);
-    putchar('\n',  0xF);
-    puts(wait, strlen(wait), 0xF);
-    putchar('\n',  0xF);
+    // char* num = itoa(pit_ticks);
+    // puts(num, strlen(num), 0xF);
+    // char* wait = itoa(ticks_to_wait);
+    // putchar('\n',  0xF);
+    // puts(wait, strlen(wait), 0xF);
+    // putchar('\n',  0xF);
     while ((pit_ticks - start) < ticks_to_wait) {
-        char* chau = itoa(pit_ticks - start);
-        puts(chau, strlen(chau), 0xF);
+        // char* chau = itoa(pit_ticks - start);
+        // puts(chau, strlen(chau), 0xF);
         __asm__ __volatile__("hlt");
     }
 }
-*/

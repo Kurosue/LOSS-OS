@@ -1,5 +1,5 @@
 #include "cpu/interrupt.h"
-#include "process/scheduler.h"
+#include "drivers/graphics.h"
 
 void io_wait(void) {
     out(0x80, 0);
@@ -72,7 +72,15 @@ void main_interrupt_handler(struct InterruptFrame frame)
             pic_ack(IRQ_TIMER);
             pit_ticks++;
 
-            scheduler_switch_to_next_process();
+            /*
+             * @see https://wiki.osdev.org/Scheduling_Algorithms#Round_Robin
+             *
+             * "A frequently chosen compromise for the quantum is between 20ms and 50ms."
+             * thus i chose 25ms as the time quantum
+             */
+            // if ((pit_ticks % 0x19) == 0) {      // every 25 ticks or so
+                scheduler_switch_to_next_process();
+            // }
             break;
 
         case 0x30: // System call (48)
@@ -191,6 +199,32 @@ void syscall(struct InterruptFrame frame) {
             }
             break;
         }
+        case 13: // delay/sleep
+            sleep_ms((uint32_t) frame.cpu.general.ebx);
+            break;
+        case 14:
+            rtc_time *user_rt = (rtc_time *) frame.cpu.general.ebx;
+            rtc_time kernel_rt;
+
+            read_rtc();
+            kernel_rt.second = second;
+            kernel_rt.minute = minute;
+            kernel_rt.hour = hour;
+            kernel_rt.day = day;
+            kernel_rt.month = month;
+            kernel_rt.century = century;
+
+            *user_rt = kernel_rt;
+            break;
+        case 15:
+            // defaults 
+            draw_info *user_di = (draw_info *) frame.cpu.general.ebx;
+            vga_draw_char(user_di->x, user_di->y, user_di->character, user_di->color);
+            break;
+        case 16:
+            vga_fill8x8((uint32_t) frame.cpu.general.ebx, (uint32_t) frame.cpu.general.ecx, (uint32_t) frame.cpu.general.edx);
+            break;
+            
            
     }
 }

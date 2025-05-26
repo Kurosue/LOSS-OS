@@ -1,5 +1,9 @@
 #include "drivers/cmos.h"
 
+int           century_register = 0x00;
+unsigned char second, minute, hour, day, month, century;
+unsigned int  year;
+
 int get_update_in_progress_flag() {
       out(cmos_address, 0x0A);
       return (in(cmos_data) & 0x80);
@@ -11,7 +15,7 @@ unsigned char get_RTC_register(int reg) {
 }
 
 void read_rtc() {
-      unsigned char century;
+      // i swear to god these ai slops are insane bruv, not touchin it
       unsigned char last_second;
       unsigned char last_minute;
       unsigned char last_hour;
