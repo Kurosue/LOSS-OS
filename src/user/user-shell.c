@@ -104,7 +104,7 @@ void processCommand(char *command)
         kill(argc, argv);
 
     else if (memcmp(cmd, "ps", 2) == 0 && strlen(cmd) == 2) {
-        syscall(11,0,0,0);
+        syscall(12,0,0,0);
         syscall(5, (uint32_t) '\n', 0xF, 0);
         syscall(5, (uint32_t) '\n', 0xF, 0);
     }

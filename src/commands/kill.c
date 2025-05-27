@@ -13,7 +13,7 @@ void kill(int argc, char *argv[]){
         return;
     }
     bool retcode;
-    syscall(10, (uint32_t) pid, (uint32_t) &retcode, 0);
+    syscall(11, (uint32_t) pid, (uint32_t) &retcode, 0);
     if(!retcode)
     {
         syscall(6, (uint32_t)"No such process\n", 18, 0xC);
