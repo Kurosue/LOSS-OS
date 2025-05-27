@@ -196,6 +196,7 @@ void syscall(struct InterruptFrame frame) {
                 puts(pcb->metadata.name, strlen(pcb->metadata.name), 0xE);
                 puts("                                ", strlen("                                ") - strlen(pcb->metadata.name), 0xC);
                 puts(state_str, strlen(state_str), 0xE);
+                putchar('\n', 0xC);
             }
             break;
         }

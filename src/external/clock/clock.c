@@ -64,7 +64,7 @@ int main(void) {
         
         // Since your CMOS driver sets binary mode (0x04), values are already in binary
         // No BCD conversion needed
-        uint8_t hour = time_data.hour;
+        uint8_t hour = (time_data.hour + 7) % 24;
         uint8_t minute = time_data.minute;
         uint8_t second = time_data.second;
         
