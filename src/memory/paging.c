@@ -31,12 +31,11 @@ static struct PageManagerState page_manager_state = {
     .physical_addr_pointr = (uint8_t *)0
 };
 
-void update_page_directory_entry(
-    struct PageDirectory *page_dir,
-    void *physical_addr, 
-    void *virtual_addr, 
-    struct PageDirectoryEntryFlag flag
-) {
+void update_page_directory_entry(struct PageDirectory *page_dir,
+                                 void *physical_addr, 
+                                 void *virtual_addr, 
+                                 struct PageDirectoryEntryFlag flag) {
+
     uint32_t page_index = ((uint32_t) virtual_addr >> 22) & 0x3FF;
     page_dir->table[page_index].flag          = flag;
     page_dir->table[page_index].lower_address = ((uint32_t) physical_addr >> 22) & 0x3FF;
@@ -47,19 +46,17 @@ void flush_single_tlb(void *virtual_addr) {
     __asm__ volatile("invlpg (%0)" : /* <Empty> */ : "b"(virtual_addr): "memory");
 }
 
-
-
 /* --- Memory Management --- */
+
 bool paging_allocate_check(uint32_t amount) {
     // Check whether requested amount is available
-
     uint32_t frameAmount = (amount + PAGE_FRAME_SIZE - 1) / PAGE_FRAME_SIZE;
-
     return page_manager_state.free_page_frame_count >= frameAmount;
 }
 
 
 bool paging_allocate_user_page_frame(struct PageDirectory *page_dir, void *virtual_addr) {
+
     /*
      * TODO: Find free physical frame and map virtual frame into it
      * - Find free physical frame in page_manager_state.page_frame_map[] using any strategies
@@ -70,6 +67,7 @@ bool paging_allocate_user_page_frame(struct PageDirectory *page_dir, void *virtu
      *     > user bit       true
      *     > pagesize 4 mb  true
      */ 
+
     if (page_manager_state.free_page_frame_count == 0) return false;
     for (int i = 1; i < PAGE_FRAME_MAX_COUNT; i++) {
         if (page_manager_state.page_frame_map[i] == false) {
@@ -97,11 +95,13 @@ bool paging_allocate_user_page_frame(struct PageDirectory *page_dir, void *virtu
 }
 
 bool paging_free_user_page_frame(struct PageDirectory *page_dir, void *virtual_addr) {
+
     /* 
      * TODO: Deallocate a physical frame from respective virtual address
      * - Use the page_dir.table values to check mapped physical frame
      * - Remove the entry by setting it into 0
      */
+
     uint32_t page_index = ((uint32_t) virtual_addr >> 22) & 0x3FF;
     if (page_dir->table[page_index].flag.present_bit){
         uint32_t i = page_dir->table[page_index].lower_address >> 22;
@@ -120,8 +120,8 @@ bool paging_free_user_page_frame(struct PageDirectory *page_dir, void *virtual_a
     }
 }
 
-
 /* --- Process-related Memory Management --- */
+
 __attribute__((aligned(0x1000))) static struct PageDirectory page_directory_list[PAGING_DIRECTORY_TABLE_MAX_COUNT] = {0};
 
 static struct {
@@ -131,6 +131,7 @@ static struct {
 };
 
 struct PageDirectory* paging_create_new_page_directory(void) {
+    
     /*
      * TODO: Get & initialize empty page directory from page_directory_list
      * - Iterate page_directory_list[] & get unused page directory
@@ -143,6 +144,7 @@ struct PageDirectory* paging_create_new_page_directory(void) {
      * - Set page_directory.table[0x300] with kernel page directory entry
      * - Return the page directory address
      */ 
+
     for (int i=0; i<PAGING_DIRECTORY_TABLE_MAX_COUNT; i++){
         if (!page_directory_manager.page_directory_used[i]){
             page_directory_manager.page_directory_used[i] = true;
@@ -165,6 +167,7 @@ struct PageDirectory* paging_create_new_page_directory(void) {
 }
 
 bool paging_free_page_directory(struct PageDirectory *page_dir) {
+    
     /**
      * TODO: Iterate & clear page directory values
      * - Iterate page_directory_list[] & check &page_directory_list[] == page_dir
