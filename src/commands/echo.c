@@ -9,6 +9,11 @@ void echo(uint32_t currentInode, int argc, char *argv[]) {
         syscall(5, (uint32_t)'\n', 0xF, 0);
     } 
     else if (argc >= 4) {
+        if(currentInode == 2) {
+            const char *msg = "echo: cannot add file in /bin directory\n\n";
+            syscall(6, (uint32_t)msg, strlen(msg), 0xC);
+            return;
+        }
         if(memcmp(argv[2], ">", 1) == 0 && strlen(argv[3]) > 0) {
             struct EXT2DriverRequest request = {
                 .buf                   = argv[1],

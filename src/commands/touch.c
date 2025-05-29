@@ -3,6 +3,11 @@
 extern void syscall(uint32_t eax, uint32_t ebx, uint32_t ecx, uint32_t edx);
 
 void touch(uint32_t current_inode, int argc, char *argv[]) {
+    if(current_inode == 2) {
+        const char *msg = "touch: cannot add new file in /bin directory\n\n";
+        syscall(6, (uint32_t)msg, strlen(msg), 0xC);
+        return;
+    }
 
     if (argc < 2) {
         const char *msg = "Usage: touch <filename>\n\n";

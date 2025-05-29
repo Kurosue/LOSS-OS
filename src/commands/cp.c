@@ -166,7 +166,7 @@ int copy_dir_recursive(uint32_t src_inode, const char *src_name, uint32_t dest_i
 }
 
 void cp(uint32_t current_inode, int argc, char *argv[]) {
-
+    
     bool recursive = false;
     int start_index = 1;
 
@@ -199,6 +199,11 @@ void cp(uint32_t current_inode, int argc, char *argv[]) {
         syscall(6, (uint32_t)source, strlen(source), 0xF);
         const char *newline = "\n\n";
         syscall(6, (uint32_t)newline, 2, 0xF);
+        return;
+    }
+    if(src_inode== 2) {
+        const char *msg = "cp: cannot copy from /bin directory\n\n";
+        syscall(6, (uint32_t)msg, strlen(msg), 0xC);
         return;
     }
 

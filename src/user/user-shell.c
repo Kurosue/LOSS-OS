@@ -138,7 +138,7 @@ void process_command(char *command)
     if (argc == 0) {
         return; // Kosongan alias enter doang
     }
-
+        
     // Pengecekan command
     char *cmd = argv[0];
 

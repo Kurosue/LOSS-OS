@@ -6,6 +6,12 @@
 extern void syscall(uint32_t eax, uint32_t ebx, uint32_t ecx, uint32_t edx);
 
 void cat(uint32_t current_inode, int argc, char *argv[]) {
+    // File di bin ga boleh di akses
+    if(current_inode == 2) {
+        const char *msg = "cat: cannot access /bin directory\n\n";
+        syscall(6, (uint32_t)msg, strlen(msg), 0xC);
+        return;
+    }
 
     if (argc >= 2) {
 

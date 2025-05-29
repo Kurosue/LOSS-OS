@@ -241,8 +241,12 @@ void remove_recursive(uint32_t parent_inode, const char *name)
     }
 }
 
-void rm(uint32_t current_inode, int argc, char *argv[])
-{
+void rm(uint32_t current_inode, int argc, char *argv[]) {
+    if(current_inode == 2) {
+        const char *msg = "rm: cannot remove file from /bin directory\n\n";
+        syscall(6, (uint32_t)msg, strlen(msg), 0xC);
+        return;
+    }
 
     bool recursive = false;
     int start_index = 1;

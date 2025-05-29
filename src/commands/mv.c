@@ -7,7 +7,7 @@
 extern void syscall(uint32_t eax, uint32_t ebx, uint32_t ecx, uint32_t edx);
 
 void mv(uint32_t current_inode, int argc, char *argv[]) {
-
+    
     if (argc < 3) {
         const char *msg = "Usage: mv <source> <destination>\n\n";
         syscall(6, (uint32_t)msg, strlen(msg), 0x7);
@@ -49,6 +49,12 @@ void mv(uint32_t current_inode, int argc, char *argv[]) {
         .name_len = 1,
     };
 
+    if(src_inode == 2) {
+        const char *msg = "mv: cannot access /bin directory\n\n";
+        syscall(6, (uint32_t)msg, strlen(msg), 0xC);
+        return;
+    }
+    
     int32_t testret_code;
     syscall(1, (uint32_t)&testReq, (uint32_t)&testret_code, 0);
 
