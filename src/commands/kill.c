@@ -2,25 +2,33 @@
 
 extern void syscall(uint32_t eax, uint32_t ebx, uint32_t ecx, uint32_t edx);
 
-void kill(int argc, char *argv[]){
+void kill(int argc, char *argv[]) {
+
     if (argc < 2) {
-        syscall(6, (uint32_t)"Usage: kill <pid>\n", 18, 0xC);
+        const char *msg = "Usage: kill <pid>\n\n";
+        syscall(6, (uint32_t)msg, strlen(msg), 0xC);
         return;
     }
+
     int pid = atoi(argv[1]);
-    if(pid == -1){
-        syscall(6, (uint32_t)"Invalid PID\n", 13, 0xC);
+
+    if (pid == -1) {
+        const char *msg = "Invalid PID\n\n";
+        syscall(6, (uint32_t)msg, strlen(msg), 0xC);
         return;
     }
-    bool retcode;
-    syscall(11, (uint32_t) pid, (uint32_t) &retcode, 0);
-    if(!retcode)
-    {
-        syscall(6, (uint32_t)"No such process\n", 18, 0xC);
+
+    bool ret_code;
+    syscall(11, (uint32_t)pid, (uint32_t)&ret_code, 0);
+
+    if (!ret_code) {
+        const char *msg = "No such process\n\n";
+        syscall(6, (uint32_t)msg, strlen(msg), 0xC);
     }
 }
 
 int atoi(char *str) {
+
     int result = 0;
     int sign = 1;
     int valid = 0;
@@ -31,22 +39,23 @@ int atoi(char *str) {
     if (*str == '-') {
         sign = -1;
         str++;
-    } else if (*str == '+') {
+    }
+    else if (*str == '+') {
         str++;
     }
-    
+
     while (*str != '\0') {
         if (*str >= '0' && *str <= '9') {
             result = result * 10 + (*str - '0');
             valid = 1;
-        } else {
+        }
+        else {
             return -1;
         }
         str++;
     }
-    if (!valid) {
-        return -1;
-    }
+
+    if (!valid) return -1;
 
     return sign * result;
 }

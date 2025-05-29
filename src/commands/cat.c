@@ -8,38 +8,50 @@ extern void syscall(uint32_t eax, uint32_t ebx, uint32_t ecx, uint32_t edx);
 void cat(uint32_t current_inode, int argc, char *argv[]) {
 
     if (argc >= 2) {
+
         const char *filename = argv[1];
+
         if (!filename) {
-            const char *msg = "Usage: cat <file>\n";
+            const char *msg = "Usage: cat <file>\n\n";
             syscall(6, (uint32_t)msg, strlen(msg), 0x7);
             return;
         }
-        
+
         struct BlockBuffer bf;
-        int32_t retcode = 0;
+        int32_t ret_code = 0;
 
         struct EXT2DriverRequest request = {
-            .buf                   = &bf,
-            .name                  = (char *)filename,
-            .parent_inode          = current_inode,
-            .buffer_size           = BLOCK_SIZE * 16,
-            .name_len              = strlen(filename),
+            .buf = &bf,
+            .name = (char *)filename,
+            .parent_inode = current_inode,
+            .buffer_size = 0x100000,
+            .name_len = strlen(filename),
         };
 
-        syscall(0, (uint32_t) &request, (uint32_t) &retcode, 0);
+        syscall(0, (uint32_t)&request, (uint32_t)&ret_code, 0);
 
-        if (retcode == 0) {
-            const char *msg = (char *) bf.buf;
+        if (ret_code == 0) {
+            const char *msg = (char *)bf.buf;
             syscall(6, (uint32_t)msg, strlen(msg), 0xF);
             syscall(5, (uint32_t)'\n', 0xF, 0);
-        } else {
-            const char *msg = "cat failed\n";
-            syscall(6, (uint32_t)msg, strlen(msg), 0xF);
+        }
+        else if (ret_code == 1) {
+            const char *msg = "cat: file not found: ";
+            syscall(6, (uint32_t)msg, strlen(msg), 0x4);
+            syscall(6, (uint32_t)filename, strlen(filename), 0xF);
+            syscall(5, (uint32_t)'\n', 0xF, 0);
+        }
+        else if (ret_code == 2) {
+            const char *msg = "cat: read failure\n\n";
+            syscall(6, (uint32_t)msg, strlen(msg), 0xC);
+        }
+        else if (ret_code == -1) {
+            const char *msg = "cat: invalid error\n\n";
+            syscall(6, (uint32_t)msg, strlen(msg), 0xC);
         }
     }
-    else
-    {
-        const char *msg = "Usage: cat <file>\n";
+    else {
+        const char *msg = "Usage: cat <file>\n\n";
         syscall(6, (uint32_t)msg, strlen(msg), 0xF);
     }
 }

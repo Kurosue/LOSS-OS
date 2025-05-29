@@ -56,6 +56,28 @@ void *memmove(void *dest, const void *src, size_t n);
 size_t strlen(const char *str);
 
 /**
+ * C standard strcpy, check man strcpy or
+ * https://man7.org/linux/man-pages/man3/strcpy.3.html for more details
+ * 
+ * @param dest Pointer to destination string buffer
+ * @param src Pointer to source null-terminated string
+ * 
+ * @return Pointer dest
+*/
+char* strcpy(char *dest, const char *src);
+
+/**
+ * C standard strcat, check man strcat or
+ * https://man7.org/linux/man-pages/man3/strcat.3.html for more details
+ * 
+ * @param dest Pointer to destination string buffer (must be null-terminated)
+ * @param src Pointer to source null-terminated string to append
+ * 
+ * @return Pointer dest
+*/
+char* strcat(char *dest, const char *src);
+
+/**
  * Split a mutable C-string in-place by replacing delimiter characters with '\0'.
  * Populates the provided output array with pointers to each token.
  *

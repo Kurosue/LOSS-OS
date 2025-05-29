@@ -53,6 +53,21 @@ size_t strlen(const char *str) {
     return len;
 }
 
+char* strcpy(char *dest, const char *src) {
+    char *original_dest = dest;
+    while ((*dest++ = *src++));
+    return original_dest;
+}
+
+char* strcat(char *dest, const char *src) {
+    char *original_dest = dest;
+    // Find end of dest string
+    while (*dest) dest++;
+    // Copy src to end of dest
+    while ((*dest++ = *src++));
+    return original_dest;
+}
+
 size_t split(char *str, char delim, char **out, size_t max_tokens) {
     if (!str || !out || max_tokens == 0) return 0;
     size_t count = 0;
