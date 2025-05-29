@@ -208,7 +208,7 @@ void process_command(char *command)
 void terminal() {
 
     // Pemanis sahaja biar keren
-    char *user = "kiwz";
+    char *user = "Atmint";
     char *OSname = "@LOSS-2025";
     syscall(6, (uint32_t) user, strlen(user), 0xA);
     syscall(6, (uint32_t) OSname, strlen(OSname), 0xF);

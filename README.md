@@ -117,6 +117,33 @@ Each milestone has delighting bonus for those who capable of...
 
 ### Prologue <a name="prologue"></a>
 
+_One day, I was walking looking for my wife Firefly and when in the living room I saw Firefly sitting on the sofa and then I came over to her it turned out that Firefly was sitting relaxing in the living room while enjoying a cup of tea then I sat next to her and chatted with her._
+
+_“My darling, what are you doing sitting here”, I asked Firefly and Firefly replied “It's okay, I'm just sitting and relaxing while drinking tea”, Firefly replied while sitting relaxed. Firefly and I both enjoyed our moments together throughout the day and I hope we will always be happy together and after that Firefly was a little tired and then leaned on my shoulder quietly and then when he finished leaning on my shoulder I then stroked his head gently with my affection for him I really enjoyed it so much that it made me fall asleep on Firefly's lap and when Firefly was stroking my head he laughed a little happily watching me fall asleep on his lap and then he whispered a soft word!_
+
+<p align="center">
+    <img width="50%" src="https://github.com/user-attachments/assets/e131d9d1-e81d-4653-90bb-be24448dfb5b">
+</p>
+
+_"Dear... I love you very much all the time and I promise I will be a better wife for you because I love you with all my heart, I promise I will take care of you with all my soul and I hope we will always be together like this until the end of our lives and I hope we can be happy all the time. But you need to work on your OS"._
+
+_Fine... I'll do it. I stand up from my chair then walk to Sadang Serang camp to met all my teammates. We thriving to make the best OS we can made. Each milestone are just stepping stone for us, we break limitation of the system itself._
+
+<p align="center">
+  <em><strong>“ Mode 12h was crawling at 1fps with pixel-by-pixel torture. 640x480 planar rendering? More like 640x480 reasons to cry. Finally cracked the planar write modes - this rips through memory. Went from peasant pixels to gigachad block . Here i am standing proudly”</strong></em><br>
+  <img width="50%" src="https://tenor.com/dfaO7BthZEE.gif"><br>
+  — Kiwz
+</p>
+
+_We fought desires and laziness, we have been lobotomized and evolve more. We stand proud and we know we are the ego itself. Abolish the idea of winning by chance, and claim victory as logical sequence ringing on our mind. "We are egoist"_
+
+_And at the end, If you're not the world's top egoist, you can never become the world's best low level engineer -idk who said this. Though we won the fight but at what cost.... Why don't i ever realize what i have until it's lost to Me? This OS is the proof that i and my teamates that have lived._
+
+<p align="center">
+    <img width="50%" src="https://tenor.com/f2CDtp9544h.gif">
+</p>
+
+
 ---
 
 <!-- Milestones -->
