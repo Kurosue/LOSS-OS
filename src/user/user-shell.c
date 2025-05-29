@@ -7,11 +7,12 @@
 
 void processCommand(char *command);
 void terminal(void);
+void update_path_display(void);
 
 // Init buffer untuk menyimpan history sama current buffer command
 char command[10][100];
 uint32_t currentInode = 1; // Init root cihuy
-char *path = "/";
+char current_path[256] = "/"; // Track current path
 
 void syscall(uint32_t eax, uint32_t ebx, uint32_t ecx, uint32_t edx) {
     __asm__ volatile("mov %0, %%ebx" : /* <Empty> */ : "r"(ebx));
@@ -21,6 +22,80 @@ void syscall(uint32_t eax, uint32_t ebx, uint32_t ecx, uint32_t edx) {
     // Note : gcc usually use %eax as intermediate register,
     //        so it need to be the last one to mov
     __asm__ volatile("int $0x30");
+}
+
+// Import the helper functions from cd.c
+uint32_t getParentInode(uint32_t inode);
+uint32_t findChildInode(uint32_t parent_inode, const char *name, uint8_t name_len);
+
+void update_path_display(void) {
+    if (currentInode == 1) {
+        strcpy(current_path, "/");
+        return;
+    }
+    
+    // Build path by traversing up to root and then reversing
+    char path_parts[32][64];  // Store path components
+    int depth = 0;
+    uint32_t inode = currentInode;
+    
+    // Traverse up to root, collecting directory names
+    while (inode != 1 && depth < 31) {
+        uint32_t parent = getParentInode(inode);
+        if (parent == inode) break; // Safety check
+        
+        // Read parent directory to find our name
+        unsigned char data_buffer[BLOCK_SIZE * 16];
+        struct EXT2DriverRequest reqDir = {
+            .buf = &data_buffer,
+            .name = ".",
+            .parent_inode = parent,
+            .buffer_size = BLOCK_SIZE * 16,
+            .name_len = 1,
+        };
+        
+        int32_t ret_code = 0;
+        syscall(1, (uint32_t) &reqDir, (uint32_t) &ret_code, 0);
+        
+        if (ret_code != 0) break;
+        
+        // Find entry that matches our inode
+        uint32_t offset = 0;
+        bool found = false;
+        while (offset < BLOCK_SIZE * 16 && !found) {
+            struct EXT2DirectoryEntry *entry = (struct EXT2DirectoryEntry *)(data_buffer + offset);
+            if (entry->rec_len == 0) break;
+            
+            if (entry->inode == inode && entry->name_len > 0 && entry->name_len < 63) {
+                char *entry_name = (char *)entry + sizeof(struct EXT2DirectoryEntry);
+                // Skip "." and ".." entries
+                if (!(entry->name_len == 1 && entry_name[0] == '.') &&
+                    !(entry->name_len == 2 && entry_name[0] == '.' && entry_name[1] == '.')) {
+                    
+                    // Copy directory name
+                    for (int i = 0; i < entry->name_len; i++) {
+                        path_parts[depth][i] = entry_name[i];
+                    }
+                    path_parts[depth][entry->name_len] = '\0';
+                    depth++;
+                    found = true;
+                }
+            }
+            offset += entry->rec_len;
+        }
+        
+        if (!found) break;
+        inode = parent;
+    }
+    
+    // Build the path string from root down
+    strcpy(current_path, "/");
+    for (int i = depth - 1; i >= 0; i--) {
+        if (strlen(current_path) > 1) {
+            strcat(current_path, "/");
+        }
+        strcat(current_path, path_parts[i]);
+    }
 }
 
 void processCommand(char *command)
@@ -64,8 +139,14 @@ void processCommand(char *command)
     // Pengecekan command
     char *cmd = argv[0];
 
-    if (memcmp(cmd, "cd", 2) == 0 && strlen(cmd) == 2)
+    if (memcmp(cmd, "cd", 2) == 0 && strlen(cmd) == 2) {
+        uint32_t old_inode = currentInode;
         cd(&currentInode, argc, argv);
+        // Update path if cd was successful (inode changed)
+        if (currentInode != old_inode) {
+            update_path_display();
+        }
+    }
     
     else if (memcmp(cmd, "ls", 2) == 0 && strlen(cmd) == 2)
         ls(currentInode);
@@ -127,9 +208,9 @@ void terminal()
     char *OSname = "@LOSS-2025";
     syscall(6, (uint32_t) user, strlen(user), 0xA);
     syscall(6, (uint32_t) OSname, strlen(OSname), 0xF);
-    syscall(6, (uint32_t) path, strlen(path), 0xF);
+    syscall(6, (uint32_t) ":", 1, 0xF);
+    syscall(6, (uint32_t) current_path, strlen(current_path), 0xB); // Cyan color for path
     syscall(6, (uint32_t) " $ ", 3, 0xF);
-
 
     // Input keyboard
     char buf = 0;
@@ -162,6 +243,7 @@ void terminal()
 
 int main(void) {
     syscall(7, 0, 0, 0);
+    update_path_display(); // Initialize path display
     while (true)
     {
         /* code */
