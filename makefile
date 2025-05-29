@@ -126,7 +126,7 @@ insert-all: insert-shell insert-clock insert-bad-apple
 
 bad-apple:
 	@$(ASM) $(ASMFLAGS) $(SRC_DIR)/user/crt0.s -o crt0.o
-	@$(CC)  $(CFLAGS) -fno-pie $(SRC_DIR)/external/bad-apple.c -o bad-apple.o
+	@$(CC)  $(CFLAGS) -fno-pie $(SRC_DIR)/external/bad-apple/bad-apple.c -o bad-apple.o
 	@$(LINKER) -T $(SRC_DIR)/user/user-linker.ld -melf_i386 --oformat=binary \
 		crt0.o bad-apple.o -o $(BUILD_DIR)/bad-apple
 	@echo Linking bad apple object files and generate flat binary...
