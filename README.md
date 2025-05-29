@@ -196,7 +196,7 @@ _Deadline:_
 
 > 07/04/2025 21:30:00 GMT+7
 
-Phew.. Milestone 0 was a baby (we said arrogantly, not knowing what's coming). So, in the previous milestone, we successfully run our OS BUT we can't interact. We only can look at it, like bruh. Now, we need to create the interactive system so that we can actually try our OS! Thus, what we build in Milestone 1 are:
+Phew.. Milestone 0 was a baby (we said arrogantly, not knowing what's coming). So, in the previous milestone, we successfully run our OS BUT we can't interact. We only can look at it. Now, we need to create the interactive system so that we can actually try our OS! Thus, what we build in Milestone 1 are:
 
 1. Framebuffer
    
@@ -258,7 +258,7 @@ _Deadline:_
 
 > 19/05/2025 21:30:00 GMT+7
 
-Do you think after Milestone 2, you get rid of touching EXT2 anymore? HELL NAH, when your shell command is not working, you know what? That's your EXT2 that has skill issue. But, anyways in Milestone 3, our OS should be able to do some commands by the user itself! So that, the user also have control to the OS!
+Do you think after Milestone 2, you get rid of touching EXT2 anymore? HELL NAH, when your shell command is not working, you know what? That's your EXT2 that has skill issue. But, anyways in Milestone 3, our OS should be able to do some commands by the user itself! So that, the user also has control to the OS!
 
 1. Paging
    
@@ -296,7 +296,7 @@ _Deadline:_
 
 > 29/05/2025 21:30:00 GMT+7 (_This is actually extended from_ 26/05/2025 21:30:00 GMT+7)
 
-Well well well.. who now can fully have functional OS? But, we need MORE! Now, implement multitasking so that it can handle more than 1 process ^_^
+Well well well.. now who have functional OS? But, we need MORE! Now, implement multitasking so that it can handle more than 1 process ^_^
 
 1. Setting Up Process Structures
 
@@ -323,6 +323,10 @@ Well well well.. who now can fully have functional OS? But, we need MORE! Now, i
 ---
 
 ### The OS <a name="os"></a>
+
+<p align="center">
+    <img width="100%" src="https://github.com/user-attachments/assets/41bb56eb-7086-4ea5-8fe8-0be5392697c3">
+</p>
 
 ---
 
