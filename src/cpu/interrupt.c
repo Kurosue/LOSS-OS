@@ -153,7 +153,7 @@ void syscall(struct InterruptFrame frame) {
             clear_screen();
             break;
         case 9:
-            // create process user buat exec
+            // Create process user buat exec
             *((int8_t*) frame.cpu.general.ecx) = process_create_user_process(
                 *(struct EXT2DriverRequest*) frame.cpu.general.ebx
             );

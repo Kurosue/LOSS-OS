@@ -116,6 +116,7 @@ int main(int argc, char *argv[]) {
         retcode = delete (request);
         retcode = write(&request);
     }
+    
     if (retcode == 0)
         puts("Write success");
     else if (retcode == 1)

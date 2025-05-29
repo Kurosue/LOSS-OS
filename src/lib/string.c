@@ -33,10 +33,12 @@ int memcmp(const void *s1, const void *s2, size_t n) {
 void *memmove(void *dest, const void *src, size_t n) {
     uint8_t *dstbuf       = (uint8_t*) dest;
     const uint8_t *srcbuf = (const uint8_t*) src;
+
     if (dstbuf < srcbuf) {
         for (size_t i = 0; i < n; i++)
             dstbuf[i]   = srcbuf[i];
-    } else {
+    } 
+    else {
         for (size_t i = n; i != 0; i--)
             dstbuf[i-1] = srcbuf[i-1];
     }
@@ -61,9 +63,7 @@ char* strcpy(char *dest, const char *src) {
 
 char* strcat(char *dest, const char *src) {
     char *original_dest = dest;
-    // Find end of dest string
     while (*dest) dest++;
-    // Copy src to end of dest
     while ((*dest++ = *src++));
     return original_dest;
 }
