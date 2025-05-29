@@ -5,7 +5,7 @@
 
 extern void syscall(uint32_t eax, uint32_t ebx, uint32_t ecx, uint32_t edx);
 
-int copyFile(uint32_t src_inode, const char *src_name, uint32_t dest_inode, const char *dest_name) {
+int copy_file(uint32_t src_inode, const char *src_name, uint32_t dest_inode, const char *dest_name) {
 
     // Read source file
     struct BlockBuffer file_buffer[16];
@@ -54,7 +54,7 @@ int copyFile(uint32_t src_inode, const char *src_name, uint32_t dest_inode, cons
     return 0;
 }
 
-int copyDirectoryRecursive(uint32_t src_inode, const char *src_name, uint32_t dest_inode, const char *dest_name) {
+int copy_dir_recursive(uint32_t src_inode, const char *src_name, uint32_t dest_inode, const char *dest_name) {
 
     // Destination directory
     struct EXT2DriverRequest mkdirReq = {
@@ -80,7 +80,7 @@ int copyDirectoryRecursive(uint32_t src_inode, const char *src_name, uint32_t de
     }
 
     // Source directory inode
-    uint32_t src_dir_inode = getInodeByName(src_inode, src_name);
+    uint32_t src_dir_inode = get_inode_by_name(src_inode, src_name);
     if (src_dir_inode == 0)
     {
         const char *msg = "cp: source directory not found ";
@@ -92,7 +92,7 @@ int copyDirectoryRecursive(uint32_t src_inode, const char *src_name, uint32_t de
     }
 
     // Destination directory inode
-    uint32_t dest_dir_inode = getInodeByName(dest_inode, dest_name);
+    uint32_t dest_dir_inode = get_inode_by_name(dest_inode, dest_name);
     if (dest_dir_inode == 0)
     {
         const char *msg = "cp: destination directory creation failed ";
@@ -152,10 +152,10 @@ int copyDirectoryRecursive(uint32_t src_inode, const char *src_name, uint32_t de
                 child_name[entry->name_len] = '\0';
 
                 if (entry->file_type == EXT2_FT_DIR) {
-                    copyDirectoryRecursive(src_dir_inode, child_name, dest_dir_inode, child_name);
+                    copy_dir_recursive(src_dir_inode, child_name, dest_dir_inode, child_name);
                 }
                 else if (entry->file_type == EXT2_FT_REG_FILE) {
-                    copyFile(src_dir_inode, child_name, dest_dir_inode, child_name);
+                    copy_file(src_dir_inode, child_name, dest_dir_inode, child_name);
                 }
             }
         }
@@ -192,7 +192,7 @@ void cp(uint32_t current_inode, int argc, char *argv[]) {
     char *destination = argv[start_index + 1];
 
     // Source exists or not
-    uint32_t src_inode = getInodeByName(current_inode, source);
+    uint32_t src_inode = get_inode_by_name(current_inode, source);
     if (src_inode == 0) {
         const char *msg = "cp: source not found: ";
         syscall(6, (uint32_t)msg, strlen(msg), 0x4);
@@ -227,13 +227,13 @@ void cp(uint32_t current_inode, int argc, char *argv[]) {
     }
 
     if (is_directory) {
-        if (copyDirectoryRecursive(current_inode, source, current_inode, destination) == 0) {
+        if (copy_dir_recursive(current_inode, source, current_inode, destination) == 0) {
             const char *msg = "Directory copied successfully\n\n";
             syscall(6, (uint32_t)msg, strlen(msg), 0x7);
         }
     }
     else {
-        if (copyFile(current_inode, source, current_inode, destination) == 0) {
+        if (copy_file(current_inode, source, current_inode, destination) == 0) {
             const char *msg = "File copied successfully\n\n";
             syscall(6, (uint32_t)msg, strlen(msg), 0x7);
         }

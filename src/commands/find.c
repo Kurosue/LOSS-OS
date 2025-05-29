@@ -4,7 +4,7 @@
 
 extern void syscall(uint32_t eax, uint32_t ebx, uint32_t ecx, uint32_t edx);
 
-void findRecursive(char *target, uint32_t parent_inode, char *currentPath) {
+void find_recursive(char *target, uint32_t parent_inode, char *currentPath) {
 
     // here is where the fun begins, no ai involved btw, written on nvim btw, i'm single btw
     char data_buffer[BLOCK_SIZE * 16] = {};
@@ -59,10 +59,10 @@ void findRecursive(char *target, uint32_t parent_inode, char *currentPath) {
                         syscall(6, (uint32_t)final_newline, strlen(final_newline), 0xF);
 
                         // still calls, let's say i have folder /acep/acep/
-                        findRecursive(target, entry->inode, newPath);
+                        find_recursive(target, entry->inode, newPath);
                     }
                     else {
-                        findRecursive(target, entry->inode, newPath);
+                        find_recursive(target, entry->inode, newPath);
                     }
                 }
                 else {
@@ -112,7 +112,7 @@ void find(int argc, char *argv[]) {
             syscall(6, (uint32_t)msg2, strlen(msg), 0xB);
         }
         else {
-            findRecursive(arg, 1, "/");
+            find_recursive(arg, 1, "/");
         }
     }
     else {

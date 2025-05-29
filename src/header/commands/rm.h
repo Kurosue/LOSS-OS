@@ -7,7 +7,7 @@
  * @param dirname Name of directory to check
  * @return true if directory is empty, false otherwise
  */
-bool isDirectoryEmpty(uint32_t parent_inode, const char *dirname);
+bool is_dir_empty(uint32_t parent_inode, const char *dirname);
 
 /**
  * Helper function to get inode of a file/directory by name
@@ -15,14 +15,14 @@ bool isDirectoryEmpty(uint32_t parent_inode, const char *dirname);
  * @param name Name of file/directory to find
  * @return inode number, 0 if not found
  */
-uint32_t getInodeByName(uint32_t parent_inode, const char *name);
+uint32_t get_inode_by_name(uint32_t parent_inode, const char *name);
 
 /**
  * Recursive remove function
  * @param parent_inode Parent directory inode
  * @param name Name of file/directory to remove
  */
-void removeRecursive(uint32_t parent_inode, const char *name);
+void remove_recursive(uint32_t parent_inode, const char *name);
 
 /**
  * Remove files and directories command

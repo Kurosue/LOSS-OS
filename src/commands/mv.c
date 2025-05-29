@@ -18,7 +18,7 @@ void mv(uint32_t current_inode, int argc, char *argv[]) {
     char *destination = argv[2];
 
     // Source exists or not
-    uint32_t src_inode = getInodeByName(current_inode, source);
+    uint32_t src_inode = get_inode_by_name(current_inode, source);
     if (src_inode == 0) {
         const char *msg = "mv: source not found: ";
         syscall(6, (uint32_t)msg, strlen(msg), 0x4);
@@ -29,7 +29,7 @@ void mv(uint32_t current_inode, int argc, char *argv[]) {
     }
 
     // Destination already exists or not
-    uint32_t dest_inode = getInodeByName(current_inode, destination);
+    uint32_t dest_inode = get_inode_by_name(current_inode, destination);
     if (dest_inode != 0) {
         const char *msg = "mv: destination already exists: ";
         syscall(6, (uint32_t)msg, strlen(msg), 0x4);
@@ -59,18 +59,18 @@ void mv(uint32_t current_inode, int argc, char *argv[]) {
 
     if (is_directory) {
         // Move directory: copy recursively then remove recursively
-        copy_result = copyDirectoryRecursive(current_inode, source, current_inode, destination);
+        copy_result = copy_dir_recursive(current_inode, source, current_inode, destination);
     }
     else {
         // Move file: copy then remove
-        copy_result = copyFile(current_inode, source, current_inode, destination);
+        copy_result = copy_file(current_inode, source, current_inode, destination);
     }
 
     if (copy_result == 0) {
 
         // Copy successful, now remove source
         if (is_directory) {
-            removeRecursive(current_inode, source);
+            remove_recursive(current_inode, source);
         }
         else {
             struct EXT2DriverRequest deleteReq = {

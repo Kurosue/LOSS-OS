@@ -19,15 +19,15 @@ void exec(int argc, char *argv[]) {
         .is_directory = false};
 
     int32_t ret_code;
-    // syscall(0, (uint32_t)&req, (uint32_t)&ret_code, 0);
+    syscall(0, (uint32_t)&req, (uint32_t)&ret_code, 0);
 
-    // if (ret_code != 0) {
-    //     const char *msg = "exec: program not found: ";
-    //     syscall(6, (uint32_t)msg, strlen(msg), 0x4);
-    //     syscall(6, (uint32_t)argv[1], strlen(argv[1]), 0xF);
-    //     syscall(5, (uint32_t)'\n', 0, 0);
-    //     return;
-    // }
+    if (ret_code != 0) {
+        const char *msg = "exec: program not found: ";
+        syscall(6, (uint32_t)msg, strlen(msg), 0x4);
+        syscall(6, (uint32_t)argv[1], strlen(argv[1]), 0xF);
+        syscall(6, (uint32_t)"\n\n", 2, 0);
+        return;
+    }
 
     syscall(9, (uint32_t)&req, (uint32_t)&ret_code, 0);
     if (ret_code == 1) {

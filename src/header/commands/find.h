@@ -6,7 +6,7 @@
  * @param parent_inode Parent inode to search in
  * @param currentPath Current path being searched
  */
-void findRecursive(char* target, uint32_t parent_inode, char* currentPath);
+void find_recursive(char* target, uint32_t parent_inode, char* currentPath);
 
 /**
  * Print file contents command

@@ -13,7 +13,7 @@ static int strcmp(const char *s1, const char *s2) {
     return *(unsigned char*)s1 - *(unsigned char*)s2;
 }
 
-uint32_t getParentInode(uint32_t inode) {
+uint32_t get_parent_inode(uint32_t inode) {
 
     if (inode == 1) return 1;
     
@@ -50,7 +50,7 @@ uint32_t getParentInode(uint32_t inode) {
     return 1;
 }
 
-uint32_t findChildInode(uint32_t parent_inode, const char *name, uint8_t name_len) {
+uint32_t find_child_inode(uint32_t parent_inode, const char *name, uint8_t name_len) {
 
     if (parent_inode == 0) return 0;
     
@@ -95,7 +95,7 @@ uint32_t findChildInode(uint32_t parent_inode, const char *name, uint8_t name_le
     return 0;
 }
 
-int splitPath(const char *path, char components[][64], int max_components) {
+int split_path(const char *path, char components[][64], int max_components) {
 
     int count = 0;
     int i = 0;
@@ -154,7 +154,7 @@ void cd(uint32_t *current_inode, int argc, char *argv[]) {
         if (path[0] == '/') target_inode = 1;
         
         char components[16][64]; 
-        int num_components = splitPath(path, components, 16);
+        int num_components = split_path(path, components, 16);
         
         bool success = true;
         for (int i = 0; i < num_components && success; i++) {
@@ -166,11 +166,11 @@ void cd(uint32_t *current_inode, int argc, char *argv[]) {
                 continue;
             } 
             else if (strcmp(components[i], "..") == 0) {
-                uint32_t parent = getParentInode(target_inode);
+                uint32_t parent = get_parent_inode(target_inode);
                 if (parent != 0) target_inode = parent;
             } 
             else {
-                uint32_t child = findChildInode(target_inode, components[i], strlen(components[i]));
+                uint32_t child = find_child_inode(target_inode, components[i], strlen(components[i]));
                 if (child == 0) {
                     const char *msg1 = "cd: ";
                     const char *msg2 = ": No such directory\n\n";

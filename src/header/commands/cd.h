@@ -5,7 +5,7 @@
  * @param inode The inode to get the parent of
  * @return Parent inode number, or 1 if the inode is root or an error occurs
  */
-uint32_t getParentInode(uint32_t inode);
+uint32_t get_parent_inode(uint32_t inode);
 
 /**
  * Find child inode by name under a given parent inode
@@ -14,7 +14,7 @@ uint32_t getParentInode(uint32_t inode);
  * @param name_len Length of the name
  * @return Child inode number, or 0 if not found
  */
-uint32_t findChildInode(uint32_t parent_inode, const char *name, uint8_t name_len);
+uint32_t find_child_inode(uint32_t parent_inode, const char *name, uint8_t name_len);
 
 /**
  * Split a path into components
@@ -23,7 +23,7 @@ uint32_t findChildInode(uint32_t parent_inode, const char *name, uint8_t name_le
  * @param max_components Maximum number of components to store
  * @return Number of components found
  */
-int splitPath(const char *path, char components[][64], int max_components);
+int split_path(const char *path, char components[][64], int max_components);
 
 /**
  * Change directory command

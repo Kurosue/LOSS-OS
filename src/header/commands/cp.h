@@ -8,7 +8,7 @@
  * @param dest_name Destination file name
  * @return 0 on success, error code on failure
  */
-int copyFile(uint32_t src_inode, const char *src_name, uint32_t dest_inode, const char *dest_name);
+int copy_file(uint32_t src_inode, const char *src_name, uint32_t dest_inode, const char *dest_name);
 
 /**
  * Helper function to copy a directory recursively
@@ -18,7 +18,7 @@ int copyFile(uint32_t src_inode, const char *src_name, uint32_t dest_inode, cons
  * @param dest_name Destination directory name
  * @return 0 on success, error code on failure
  */
-int copyDirectoryRecursive(uint32_t src_inode, const char *src_name, uint32_t dest_inode, const char *dest_name);
+int copy_dir_recursive(uint32_t src_inode, const char *src_name, uint32_t dest_inode, const char *dest_name);
 
 /**
  * Copy files and directories command

@@ -6,4 +6,4 @@
  * @param argv Argument vector
  * @return void
  */
-void flex(int argc, char *argv[]);
+void flex(int argc, char **argv);
