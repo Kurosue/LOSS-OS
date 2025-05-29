@@ -133,7 +133,7 @@ _Fine... I'll do it. I stand up from my chair then walk to Sadang Serang camp to
 
 <p align="center">
   <em><strong>“ Mode 12h was crawling at 1fps with pixel-by-pixel torture. 640x480 planar rendering? More like 640x480 reasons to cry. Finally cracked the planar write modes - this rips through memory. Went from peasant pixels to gigachad block . Here i am standing proudly”</strong></em><br>
-  <img width="30%" src="https://github.com/user-attachments/assets/783462a7-3e68-43be-9d40-9ecc9fd2bc5a"><br>
+  <br><img width="30%" src="https://github.com/user-attachments/assets/783462a7-3e68-43be-9d40-9ecc9fd2bc5a"><br>
   — Kiwz
 </p>
 
