@@ -87,7 +87,7 @@ void keyboard_isr(void) {
         // Process regular scancode
         else {
             bool is_break_code = (scancode & 0x80) != 0;
-            uint8_t clean_scancode = scancode & 0x7F; // Remove the break code bit
+            uint8_t clean_scancode = scancode & 0x7F;
             
             // Handle regular make/break codes
             if (!keyboard_state.read_extended_mode) {

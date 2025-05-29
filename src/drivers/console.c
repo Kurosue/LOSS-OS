@@ -50,8 +50,9 @@ void putchar(char c, uint8_t text_color) {
     }
 
     uint8_t key = get_special_key();
+
     // Cuma untuk handle left ama right arrow
-    if (key == KEY_LEFT) { // Left arrow
+    if (key == KEY_LEFT) {
         vga_clear_cursor(framebuffer_state.col, framebuffer_state.row);
         if (framebuffer_state.col > 0) {
             framebuffer_state.col--;
@@ -62,7 +63,7 @@ void putchar(char c, uint8_t text_color) {
         }
         update_cursor(text_color);
     } 
-    else if (key == KEY_RIGHT) { // Right arrow
+    else if (key == KEY_RIGHT) {
         vga_clear_cursor(framebuffer_state.col, framebuffer_state.row);
         if (framebuffer_state.col < MAX_COLS - 1) {
             framebuffer_state.col++;
