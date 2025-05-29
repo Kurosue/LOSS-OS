@@ -49,11 +49,8 @@ void print_number(uint8_t num) {
 }
 
 int main(void) {
-    struct cmos_reader time_data;
     
-    // Display initial message
-    const char *msg = "\nClock running...\n\n";
-    syscall(6, (uint32_t)msg, strlen(msg), 0xA);
+    struct cmos_reader time_data;
     
     // Continuous clock display
     while (1) {
