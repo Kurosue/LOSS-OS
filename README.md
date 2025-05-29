@@ -1,4 +1,4 @@
-# Final Project - IF2130 Operating System 
+# Final Project - IF2130 Operating System: Loss
 > Yes, we made our own OS from stratch _(not really tho, but still)_.
 
 <br>
@@ -136,6 +136,10 @@ _Deadline:_
 > 24/03/2025 21:30:00 GMT+7
 
 Ah yes... The starting point. Who knows 4 person with big smile, curiousity, and excitement turns into Waterloo's face type shi. We're already in contact each other since January 2025 to create this team. But, yep every person have their ups and downs. Nevertheless, this is a great team to work with. Now, let's disucss the actual milestone 0 progress is.
+
+<p align="center">
+    <img width="50%" src="https://github.com/user-attachments/assets/3d632f50-fd0f-4d1c-b0b6-5f6a1244666c">
+</p>
 
 So, yeah just basic repository and installer setup with template that already created by the assistant. Using `WSL2 Ubuntu 20.04/22.04`, we only need to run these commands:
 
