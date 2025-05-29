@@ -5,6 +5,7 @@
 // Woila Penyelamat OSWiki 
 
 void vga_init(void) {
+
     uint8_t tmp;
     out(VGA_CRTC_INDEX, 0x11);
     tmp = in(VGA_CRTC_DATA);
@@ -66,6 +67,7 @@ void vga_init(void) {
 }
 
 void vga_draw_pixel(int x, int y, uint8_t color) {
+
     if (x < 0 || x >= VGA_WIDTH || y < 0 || y >= VGA_HEIGHT) return;
     int byteIndex = y * VGA_PITCH + (x >> 3);
     uint8_t mask = 1 << (7 - (x & 7));
@@ -86,20 +88,23 @@ void vga_draw_pixel(int x, int y, uint8_t color) {
         // Ganti bit warnanya
         if (color & (1 << plane)) {
             vga[byteIndex] = current | mask;
-        } else {
+        } 
+        else {
             vga[byteIndex] = current & ~mask;
         }
     }
 }
 
 void vga_clear(uint8_t color) {
+
     uint8_t *vga = (uint8_t*)VGA_MEMORY;
     for (int plane = 0; plane < 4; plane++) {
         out(VGA_SEQ_INDEX, 0x02);
         out(VGA_SEQ_DATA, (1 << plane));    
         if (color & (1 << plane)) {
             for (int i = 0; i < VGA_PLANE_SIZE; i++) vga[i] = 0xFF;
-        } else {
+        } 
+        else {
             for (int i = 0; i < VGA_PLANE_SIZE; i++) vga[i] = 0x00;
         }
     }
@@ -126,9 +131,11 @@ void vga_clear_cursor(int cx, int cy) {
 }
 
 void vga_draw_char(int x, int y, char c, uint8_t color) {
+
     x = x * 8;
     y = y * 8;
     if (c < 32 || c > 126) return;
+
     // Bersihin dulu 8x8 pixel yang baka dipake
     for(int dy=0; dy<8; dy++) {
         for(int dx=0; dx<8; dx++) {
@@ -140,6 +147,7 @@ void vga_draw_char(int x, int y, char c, uint8_t color) {
     for(int row = 0; row < 8; row++) {
         uint8_t bits = glyph[row];
         for(int col = 0; col < 8; col++) {
+
             // The font has LSB as the leftmost pixel (bit 0 = leftmost)
             if (bits & (1 << col)) {  // Changed back to original
                 vga_draw_pixel(x + col, y + row, color);
@@ -149,6 +157,7 @@ void vga_draw_char(int x, int y, char c, uint8_t color) {
 }
 
 void vga_fill8x8(int x, int y, uint8_t color) {
+
     /*
      * 22:48 CC Barat ITB
      * Mode 12h was crawling at 1fps with pixel-by-pixel torture
@@ -159,6 +168,7 @@ void vga_fill8x8(int x, int y, uint8_t color) {
      *
      * P.S. Mom, your son just made VGA his bitch
      */
+
     if (x < 0 || x + 8 > VGA_WIDTH || y < 0 || y + 8 > VGA_HEIGHT) return;
     
     uint8_t *vga = (uint8_t*)VGA_MEMORY;
@@ -183,7 +193,8 @@ void vga_fill8x8(int x, int y, uint8_t color) {
             for (int row = 0; row < 8; row++) {
                 vga[(y + row) * VGA_PITCH + startByte] = planeValue;
             }
-        } else {
+        } 
+        else {
             // not byte-aligned (cry)
             uint8_t leftMask = 0xFF >> startBit;
             uint8_t rightMask = 0xFF << (8 - startBit);
@@ -195,7 +206,8 @@ void vga_fill8x8(int x, int y, uint8_t color) {
                 uint8_t current = scanline[startByte];
                 if (planeValue) {
                     scanline[startByte] = current | leftMask;
-                } else {
+                } 
+                else {
                     scanline[startByte] = current & ~leftMask;
                 }
                 
@@ -203,7 +215,8 @@ void vga_fill8x8(int x, int y, uint8_t color) {
                 current = scanline[startByte + 1];
                 if (planeValue) {
                     scanline[startByte + 1] = current | rightMask;
-                } else {
+                } 
+                else {
                     scanline[startByte + 1] = current & ~rightMask;
                 }
             }
