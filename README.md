@@ -383,8 +383,8 @@ We gratefully acknowledge:
 
 <br>
 <p align="center">
-  <em><strong>“Bad programmers worry about code.<br>
-  Good programmers worry about data structures and their relationships.”</strong></em><br>
+  <em><strong>“Those that can, do.<br>
+  Those that can't, complain.”</strong></em><br>
   — Linus Torvalds
 </p>
 
