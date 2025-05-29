@@ -33,17 +33,17 @@ void cat(uint32_t current_inode, int argc, char *argv[]) {
         if (ret_code == 0) {
             const char *msg = (char *)bf.buf;
             syscall(6, (uint32_t)msg, strlen(msg), 0xF);
-            syscall(5, (uint32_t)'\n', 0xF, 0);
+            syscall(6, (uint32_t)"\n\n", 2, 0);
         }
         else if (ret_code == 1) {
+            const char *msg = "cat: read failure\n\n";
+            syscall(6, (uint32_t)msg, strlen(msg), 0xC);
+        }
+        else if (ret_code == 2) {
             const char *msg = "cat: file not found: ";
             syscall(6, (uint32_t)msg, strlen(msg), 0x4);
             syscall(6, (uint32_t)filename, strlen(filename), 0xF);
-            syscall(5, (uint32_t)'\n', 0xF, 0);
-        }
-        else if (ret_code == 2) {
-            const char *msg = "cat: read failure\n\n";
-            syscall(6, (uint32_t)msg, strlen(msg), 0xC);
+            syscall(6, (uint32_t)"\n\n", 2, 0);
         }
         else if (ret_code == -1) {
             const char *msg = "cat: invalid error\n\n";

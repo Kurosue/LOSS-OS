@@ -18,7 +18,7 @@ void find_recursive(char *target, uint32_t parent_inode, char *currentPath) {
 
     int32_t ret_code;
     syscall(1, (uint32_t)&reqDir, (uint32_t)&ret_code, 0);
-    const char *final_newline = "\n";
+    const char *final_newline = "\n\n";
 
     if (ret_code == 0) {
         uint32_t current_offset = 0;

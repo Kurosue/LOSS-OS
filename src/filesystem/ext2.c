@@ -425,7 +425,7 @@ int8_t read(struct EXT2DriverRequest request) {
     }
     
     if (!found) {
-        return 2; // File nya ga nemu di folde rparent 
+        return 2; // File nya ga nemu di folder parent 
     }
     
     if (entry_file_type != EXT2_FT_REG_FILE) {

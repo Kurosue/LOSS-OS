@@ -198,7 +198,7 @@ void process_command(char *command)
 
     else {
         const char *msg = "Error: Command ";
-        const char *nmsg = " is not available !!\n";
+        const char *nmsg = " is not available !!\n\n";
         syscall(6, (uint32_t) msg, strlen(msg), 0x4);
         syscall(6, (uint32_t) cmd, strlen(cmd), 0xF);
         syscall(6, (uint32_t) nmsg, strlen(nmsg), 0x4);
