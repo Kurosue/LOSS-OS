@@ -380,7 +380,7 @@ Well well well.. now who have functional OS? But, we need MORE! Now, implement m
 - **Clone the repository**
 
   ```bash
-  git clone https://github.com/zirachw/Tucil3_13523004_13523098
+  git clone https://github.com/Kurosue/LOSS-OS.git
   ```
 
 - **Install the dependencies (Skip if already installed)**
